@@ -37,7 +37,14 @@ export const useFocusStore = defineStore('focus', () => {
         if (res.session.taskTitle) activeTaskTitle.value = res.session.taskTitle
         if (res.session.mode) mode.value = res.session.mode
         if (res.session.durationSeconds) durationSeconds.value = res.session.durationSeconds
-        if (res.session.elapsedSeconds) elapsedSeconds.value = res.session.elapsedSeconds
+        if (res.session.elapsedSeconds !== undefined) elapsedSeconds.value = res.session.elapsedSeconds
+
+        if (res.session.isRunning && res.session.targetEndTimestamp) {
+          targetEndTimestamp.value = res.session.targetEndTimestamp
+          startTimerLocalOnly()
+        } else if (res.session.isRunning === false && isRunning.value) {
+          pauseTimerLocalOnly()
+        }
       }
     } catch (err) {
       console.error('[FocusStore] Failed to fetch focus session:', err)
@@ -54,6 +61,8 @@ export const useFocusStore = defineStore('focus', () => {
           mode: mode.value,
           durationSeconds: durationSeconds.value,
           elapsedSeconds: elapsedSeconds.value,
+          isRunning: isRunning.value,
+          targetEndTimestamp: targetEndTimestamp.value,
           completed
         }
       })
@@ -80,35 +89,43 @@ export const useFocusStore = defineStore('focus', () => {
     }
   }
 
-  function startTimer() {
-    if (isRunning.value) return
-    requestNotificationPermission()
+  function startTimerLocalOnly() {
     isRunning.value = true
-    
-    // Set target end time based on remaining duration
-    const remainingSecs = durationSeconds.value - elapsedSeconds.value
-    targetEndTimestamp.value = Date.now() + remainingSecs * 1000
-
     if (timerInterval.value) clearInterval(timerInterval.value)
-    
-    // Check frequently (every 500ms) for high accuracy even with browser throttling
+    updateElapsedFromWallClock()
     timerInterval.value = setInterval(() => {
       updateElapsedFromWallClock()
     }, 500)
   }
 
-  function pauseTimer() {
+  function pauseTimerLocalOnly() {
     if (timerInterval.value) {
       clearInterval(timerInterval.value)
       timerInterval.value = null
     }
     isRunning.value = false
     targetEndTimestamp.value = null
+  }
+
+  function startTimer() {
+    if (isRunning.value) return
+    requestNotificationPermission()
+    
+    // Set target end time based on remaining duration
+    const remainingSecs = durationSeconds.value - elapsedSeconds.value
+    targetEndTimestamp.value = Date.now() + remainingSecs * 1000
+
+    startTimerLocalOnly()
+    syncSession()
+  }
+
+  function pauseTimer() {
+    pauseTimerLocalOnly()
     syncSession()
   }
 
   function stopTimer() {
-    pauseTimer()
+    pauseTimerLocalOnly()
     elapsedSeconds.value = 0
     syncSession()
   }

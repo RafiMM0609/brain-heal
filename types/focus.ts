@@ -7,6 +7,8 @@ export interface FocusSession {
   mode: FocusMode
   durationSeconds: number
   elapsedSeconds: number
+  isRunning?: boolean
+  targetEndTimestamp?: number | null
   completed: boolean
   timestamp: string
 }

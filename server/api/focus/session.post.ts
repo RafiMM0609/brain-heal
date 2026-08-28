@@ -12,6 +12,8 @@ export default defineEventHandler(async (event) => {
     mode: body.mode || 'work',
     durationSeconds: body.durationSeconds || 1500,
     elapsedSeconds: body.elapsedSeconds || 0,
+    isRunning: body.isRunning !== undefined ? body.isRunning : false,
+    targetEndTimestamp: body.targetEndTimestamp !== undefined ? body.targetEndTimestamp : null,
     completed: body.completed || false,
     timestamp: new Date().toISOString()
   }
