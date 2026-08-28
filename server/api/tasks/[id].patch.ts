@@ -1,4 +1,5 @@
 import { REDIS_KEYS, redisGet, redisSet } from '~/server/utils/redis'
+import { syncBus } from '~/server/utils/bus'
 import type { TaskItem, QuadrantType } from '~/types/task'
 
 export default defineEventHandler(async (event) => {
@@ -32,6 +33,9 @@ export default defineEventHandler(async (event) => {
 
   taskList[index] = updatedTask
   await redisSet(REDIS_KEYS.TASKS, taskList)
+
+  // Broadcast sync event to all connected clients
+  syncBus.emitSync('tasks', 'update')
 
   return {
     task: updatedTask,

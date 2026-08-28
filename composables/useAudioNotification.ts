@@ -72,8 +72,8 @@ export function useAudioNotification() {
         try {
           new Notification(title, {
             body,
-            icon: '/favicon.ico',
-            badge: '/favicon.ico',
+            icon: '/favicon.svg',
+            badge: '/favicon.svg',
             silent: false
           })
         } catch (e) {

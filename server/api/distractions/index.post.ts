@@ -1,4 +1,5 @@
 import { REDIS_KEYS, redisGet, redisSet } from '~/server/utils/redis'
+import { syncBus } from '~/server/utils/bus'
 import type { DistractionItem } from '~/types/focus'
 
 export default defineEventHandler(async (event) => {
@@ -23,6 +24,9 @@ export default defineEventHandler(async (event) => {
 
   const updatedList = [newItem, ...distractionList]
   await redisSet(REDIS_KEYS.DISTRACTIONS, updatedList)
+
+  // Broadcast sync event to all connected clients
+  syncBus.emitSync('distractions', 'create')
 
   return {
     distraction: newItem,

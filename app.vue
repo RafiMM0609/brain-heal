@@ -2,6 +2,7 @@
 import { useFocusStore } from '~/stores/useFocusStore'
 
 const focusStore = useFocusStore()
+useRealtimeSync()
 
 function updateTabTitle() {
   if (import.meta.server || typeof document === 'undefined') return

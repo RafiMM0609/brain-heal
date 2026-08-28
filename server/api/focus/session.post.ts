@@ -1,4 +1,5 @@
 import { REDIS_KEYS, redisSet } from '~/server/utils/redis'
+import { syncBus } from '~/server/utils/bus'
 import type { FocusSession } from '~/types/focus'
 
 export default defineEventHandler(async (event) => {
@@ -16,6 +17,9 @@ export default defineEventHandler(async (event) => {
   }
 
   await redisSet(REDIS_KEYS.FOCUS_SESSION, session)
+
+  // Broadcast sync event to all connected clients
+  syncBus.emitSync('focus', 'update')
 
   return {
     session
