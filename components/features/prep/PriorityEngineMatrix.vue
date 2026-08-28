@@ -104,16 +104,35 @@ function startFocusOnTask(task: TaskItem) {
 <template>
   <div class="flex flex-col h-full max-w-container-max-width mx-auto w-full">
     <!-- Title & Neuroscience Header -->
-    <div class="mb-6 flex justify-between items-end">
+    <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
       <div>
         <h2 class="text-display-lg font-bold text-primary mb-2">Priority Engine</h2>
         <p class="text-body-lg text-on-surface-variant max-w-2xl">
           Reduce decision fatigue by categorizing tasks. The Eisenhower Matrix bypasses the amygdala's stress response, engaging the prefrontal cortex for deliberate execution.
         </p>
       </div>
-      <AppTooltip title="Neuroscience Note:">
-        Categorizing tasks into rigid structural buckets reduces the cognitive load required to hold them in working memory. This lowers cortisol and protects focus.
-      </AppTooltip>
+      <div class="flex items-center gap-2 shrink-0">
+        <button
+          @click="taskStore.resetDefaultTasks()"
+          class="px-3 py-1.5 bg-surface-container-high hover:bg-surface-variant text-on-surface rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 border border-surface-variant"
+          title="Restore standard demo tasks"
+        >
+          <Icon name="material-symbols:restart-alt" class="text-[16px]" />
+          <span>Reset Demo Tasks</span>
+        </button>
+        <button
+          v-if="taskStore.tasks.length > 0"
+          @click="taskStore.clearAllTasks()"
+          class="px-3 py-1.5 bg-error-container/40 hover:bg-error-container text-error rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 border border-error/20"
+          title="Clear all tasks from Upstash & UI"
+        >
+          <Icon name="material-symbols:delete-sweep" class="text-[16px]" />
+          <span>Clear All</span>
+        </button>
+        <AppTooltip title="Neuroscience Note:">
+          Categorizing tasks into rigid structural buckets reduces the cognitive load required to hold them in working memory. This lowers cortisol and protects focus.
+        </AppTooltip>
+      </div>
     </div>
 
     <!-- Mobile Swipe Priority Engine (Visible on mobile screens lg:hidden) -->

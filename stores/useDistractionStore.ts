@@ -67,6 +67,24 @@ export const useDistractionStore = defineStore('distractions', () => {
     }
   }
 
+  async function clearAllDistractions() {
+    distractions.value = []
+    try {
+      await apiFetch('/api/distractions', { method: 'DELETE' })
+    } catch (err) {
+      console.error('[DistractionStore] Failed to clear distractions:', err)
+    }
+  }
+
+  async function deleteDistraction(id: string) {
+    distractions.value = distractions.value.filter(d => d.id !== id)
+    try {
+      await apiFetch(`/api/distractions/${id}`, { method: 'DELETE' })
+    } catch (err) {
+      console.error(`[DistractionStore] Failed to delete distraction ${id}:`, err)
+    }
+  }
+
   if (import.meta.client) {
     fetchDistractions()
   }
@@ -76,6 +94,8 @@ export const useDistractionStore = defineStore('distractions', () => {
     isLoading,
     fetchDistractions,
     addDistraction,
-    convertToTask
+    convertToTask,
+    clearAllDistractions,
+    deleteDistraction
   }
 })

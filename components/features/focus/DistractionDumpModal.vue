@@ -84,24 +84,42 @@ function handleSave() {
 
       <!-- List of recent distraction logs -->
       <div v-if="distractionStore.distractions.length > 0" class="pt-4 border-t border-surface-variant">
-        <h4 class="text-label-sm uppercase font-semibold text-outline mb-2">Logged Distractions in Session</h4>
+        <div class="flex items-center justify-between mb-2">
+          <h4 class="text-label-sm uppercase font-semibold text-outline">Logged Distractions in Session</h4>
+          <button
+            @click="distractionStore.clearAllDistractions()"
+            class="text-xs text-error hover:underline font-medium flex items-center gap-1"
+            title="Clear all distractions"
+          >
+            <Icon name="material-symbols:delete-sweep" class="text-[14px]" /> Clear All
+          </button>
+        </div>
         <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
           <div
             v-for="item in distractionStore.distractions"
             :key="item.id"
-            class="p-3 bg-surface-container-lowest rounded-lg border border-surface-variant flex items-center justify-between text-sm text-on-surface"
+            class="p-3 bg-surface-container-lowest rounded-lg border border-surface-variant flex items-center justify-between text-sm text-on-surface group"
           >
             <span class="truncate flex-1 mr-2">{{ item.content }}</span>
-            <button
-              v-if="!item.convertedToTask"
-              @click="distractionStore.convertToTask(item.id)"
-              class="text-xs text-primary font-semibold hover:underline flex items-center gap-1 shrink-0"
-            >
-              <Icon name="material-symbols:add-task" class="text-[14px]" /> Convert to Task
-            </button>
-            <span v-else class="text-xs text-secondary font-medium flex items-center gap-1 shrink-0">
-              <Icon name="material-symbols:check" class="text-[14px]" /> In Inbox
-            </span>
+            <div class="flex items-center gap-2 shrink-0">
+              <button
+                v-if="!item.convertedToTask"
+                @click="distractionStore.convertToTask(item.id)"
+                class="text-xs text-primary font-semibold hover:underline flex items-center gap-1"
+              >
+                <Icon name="material-symbols:add-task" class="text-[14px]" /> Convert to Task
+              </button>
+              <span v-else class="text-xs text-secondary font-medium flex items-center gap-1">
+                <Icon name="material-symbols:check" class="text-[14px]" /> In Inbox
+              </span>
+              <button
+                @click="distractionStore.deleteDistraction(item.id)"
+                class="text-outline hover:text-error transition-colors p-1 rounded"
+                title="Delete distraction"
+              >
+                <Icon name="material-symbols:delete" class="text-[16px]" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

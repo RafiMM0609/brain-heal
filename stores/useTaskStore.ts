@@ -110,6 +110,26 @@ export const useTaskStore = defineStore('tasks', () => {
     }
   }
 
+  async function clearAllTasks() {
+    tasks.value = []
+    try {
+      await apiFetch('/api/tasks', { method: 'DELETE' })
+    } catch (err) {
+      console.error('[TaskStore] Failed to clear tasks:', err)
+    }
+  }
+
+  async function resetDefaultTasks() {
+    try {
+      const res = await apiFetch<{ tasks: TaskItem[] }>('/api/tasks?reset=true', { method: 'DELETE' })
+      if (res && Array.isArray(res.tasks)) {
+        tasks.value = res.tasks
+      }
+    } catch (err) {
+      console.error('[TaskStore] Failed to reset tasks:', err)
+    }
+  }
+
   // Fetch tasks when running in client context
   if (import.meta.client) {
     fetchTasks()
@@ -128,6 +148,8 @@ export const useTaskStore = defineStore('tasks', () => {
     addTask,
     moveTask,
     toggleTaskComplete,
-    deleteTask
+    deleteTask,
+    clearAllTasks,
+    resetDefaultTasks
   }
 })
