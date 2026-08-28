@@ -7,17 +7,49 @@ const taskStore = useTaskStore()
 const quickAddInput = ref('')
 const draggedTaskId = ref<string | null>(null)
 const activeDragOverQuadrant = ref<QuadrantType | null>(null)
+const justDraggedTimestamp = ref(0)
 
 const router = useRouter()
-const expandedTaskIds = ref<Record<string, boolean>>({})
+const copiedTaskId = ref<string | null>(null)
+let copyTimeout: ReturnType<typeof setTimeout> | null = null
 
-function toggleExpand(taskId: string) {
-  expandedTaskIds.value[taskId] = !expandedTaskIds.value[taskId]
+async function copyTaskText(text: string, taskId: string) {
+  // Edge case: Ignore click if drag operation completed recently (< 300ms)
+  if (Date.now() - justDraggedTimestamp.value < 300) {
+    return
+  }
+
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      // Fallback for non-secure contexts or unsupported Clipboard API
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      document.execCommand('copy')
+      textArea.remove()
+    }
+
+    if (copyTimeout) clearTimeout(copyTimeout)
+    copiedTaskId.value = taskId
+    copyTimeout = setTimeout(() => {
+      copiedTaskId.value = null
+    }, 1500)
+  } catch (err) {
+    console.error('Failed to copy task text:', err)
+  }
 }
 
 // Drag and drop handlers
 function onDragStart(event: DragEvent, taskId: string) {
   draggedTaskId.value = taskId
+  justDraggedTimestamp.value = Date.now()
   if (event.dataTransfer) {
     event.dataTransfer.effectAllowed = 'move'
     event.dataTransfer.setData('text/plain', taskId)
@@ -27,6 +59,7 @@ function onDragStart(event: DragEvent, taskId: string) {
 function onDragEnd() {
   draggedTaskId.value = null
   activeDragOverQuadrant.value = null
+  justDraggedTimestamp.value = Date.now()
 }
 
 function onDragOver(event: DragEvent, targetQuadrant: QuadrantType) {
@@ -51,6 +84,7 @@ function onDrop(event: DragEvent, targetQuadrant: QuadrantType) {
   }
   draggedTaskId.value = null
   activeDragOverQuadrant.value = null
+  justDraggedTimestamp.value = Date.now()
 }
 
 function handleQuickAdd() {
@@ -115,11 +149,15 @@ function startFocusOnTask(task: TaskItem) {
             <div class="flex items-center gap-2 flex-1 min-w-0">
               <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
               <span
-                @click.stop="toggleExpand(task.id)"
-                :title="task.title"
-                class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1"
-                :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
-              >{{ task.title }}</span>
+                @click.stop="copyTaskText(task.title, task.id)"
+                :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
+                class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+              >
+                <span>{{ task.title }}</span>
+                <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
+                  <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
+                </span>
+              </span>
             </div>
             <button
               @click.stop="taskStore.deleteTask(task.id)"
@@ -194,11 +232,15 @@ function startFocusOnTask(task: TaskItem) {
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
                 <span
-                  @click.stop="toggleExpand(task.id)"
-                  :title="task.title"
-                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1"
-                  :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
-                >{{ task.title }}</span>
+                  @click.stop="copyTaskText(task.title, task.id)"
+                  :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
+                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+                >
+                  <span>{{ task.title }}</span>
+                  <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
+                    <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
+                  </span>
+                </span>
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button
@@ -259,11 +301,15 @@ function startFocusOnTask(task: TaskItem) {
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
                 <span
-                  @click.stop="toggleExpand(task.id)"
-                  :title="task.title"
-                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1"
-                  :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
-                >{{ task.title }}</span>
+                  @click.stop="copyTaskText(task.title, task.id)"
+                  :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
+                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+                >
+                  <span>{{ task.title }}</span>
+                  <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
+                    <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
+                  </span>
+                </span>
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button
@@ -324,11 +370,15 @@ function startFocusOnTask(task: TaskItem) {
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
                 <span
-                  @click.stop="toggleExpand(task.id)"
-                  :title="task.title"
-                  class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1"
-                  :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
-                >{{ task.title }}</span>
+                  @click.stop="copyTaskText(task.title, task.id)"
+                  :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
+                  class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+                >
+                  <span>{{ task.title }}</span>
+                  <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
+                    <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
+                  </span>
+                </span>
               </div>
               <button
                 @click.stop="taskStore.deleteTask(task.id)"
@@ -381,11 +431,15 @@ function startFocusOnTask(task: TaskItem) {
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
                 <span
-                  @click.stop="toggleExpand(task.id)"
-                  :title="task.title"
-                  class="text-body-md text-on-surface line-through text-outline cursor-pointer select-text transition-all duration-150 flex-1"
-                  :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
-                >{{ task.title }}</span>
+                  @click.stop="copyTaskText(task.title, task.id)"
+                  :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
+                  class="text-body-md text-on-surface line-through text-outline cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+                >
+                  <span>{{ task.title }}</span>
+                  <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0 not-italic no-underline">
+                    <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
+                  </span>
+                </span>
               </div>
               <button
                 @click.stop="taskStore.deleteTask(task.id)"

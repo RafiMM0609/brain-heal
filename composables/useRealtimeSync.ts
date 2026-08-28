@@ -1,6 +1,7 @@
 import { useTaskStore } from '~/stores/useTaskStore'
 import { useFocusStore } from '~/stores/useFocusStore'
 import { useDistractionStore } from '~/stores/useDistractionStore'
+import { useShareStore } from '~/stores/useShareStore'
 
 export function useRealtimeSync() {
   const isConnected = ref(false)
@@ -12,10 +13,12 @@ export function useRealtimeSync() {
     const taskStore = useTaskStore()
     const focusStore = useFocusStore()
     const distractionStore = useDistractionStore()
+    const shareStore = useShareStore()
 
     taskStore.fetchTasks()
     focusStore.fetchSession()
     distractionStore.fetchDistractions()
+    shareStore.fetchItems()
     lastSyncTime.value = new Date().toLocaleTimeString()
   }
 
@@ -42,6 +45,7 @@ export function useRealtimeSync() {
           const taskStore = useTaskStore()
           const focusStore = useFocusStore()
           const distractionStore = useDistractionStore()
+          const shareStore = useShareStore()
 
           if (payload.type === 'tasks') {
             taskStore.fetchTasks()
@@ -49,6 +53,8 @@ export function useRealtimeSync() {
             focusStore.fetchSession()
           } else if (payload.type === 'distractions') {
             distractionStore.fetchDistractions()
+          } else if (payload.type === 'share') {
+            shareStore.fetchItems()
           }
 
           lastSyncTime.value = new Date().toLocaleTimeString()

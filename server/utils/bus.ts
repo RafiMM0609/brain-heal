@@ -1,7 +1,7 @@
 import { EventEmitter } from 'node:events'
 
 export interface SyncEventPayload {
-  type: 'tasks' | 'focus' | 'distractions'
+  type: 'tasks' | 'focus' | 'distractions' | 'share'
   action?: 'create' | 'update' | 'delete'
   timestamp: string
 }
@@ -12,7 +12,7 @@ class SyncBus extends EventEmitter {
     this.setMaxListeners(100)
   }
 
-  emitSync(type: 'tasks' | 'focus' | 'distractions', action: 'create' | 'update' | 'delete' = 'update') {
+  emitSync(type: 'tasks' | 'focus' | 'distractions' | 'share', action: 'create' | 'update' | 'delete' = 'update') {
     const payload: SyncEventPayload = {
       type,
       action,

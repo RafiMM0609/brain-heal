@@ -4,10 +4,39 @@ import { useTaskStore } from '~/stores/useTaskStore'
 const taskStore = useTaskStore()
 const inputText = ref('')
 const isAnimating = ref(false)
+const copiedTaskId = ref<string | null>(null)
+let copyTimeout: ReturnType<typeof setTimeout> | null = null
 
 const emit = defineEmits<{
   (e: 'next'): void
 }>()
+
+async function copyTaskText(text: string, taskId: string) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      document.execCommand('copy')
+      textArea.remove()
+    }
+
+    if (copyTimeout) clearTimeout(copyTimeout)
+    copiedTaskId.value = taskId
+    copyTimeout = setTimeout(() => {
+      copiedTaskId.value = null
+    }, 1500)
+  } catch (err) {
+    console.error('Failed to copy task text:', err)
+  }
+}
 
 function handleKeyDown(event: KeyboardEvent) {
   if (event.key === 'Enter' && !event.shiftKey) {
@@ -78,13 +107,20 @@ function removeTask(id: string) {
         <div
           v-for="task in taskStore.rawInbox"
           :key="task.id"
-          class="bg-surface-container-lowest border border-surface-variant rounded-lg p-4 flex items-start gap-3 hover:border-primary/30 transition-colors soft-shadow group"
+          @click="copyTaskText(task.title, task.id)"
+          :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
+          class="bg-surface-container-lowest border border-surface-variant rounded-lg p-4 flex items-start gap-3 hover:border-primary/30 transition-colors soft-shadow group cursor-pointer"
         >
           <div class="w-2.5 h-2.5 rounded-full bg-outline-variant mt-2 group-hover:bg-primary transition-colors shrink-0" />
-          <p class="text-body-md text-on-surface flex-1 leading-snug">{{ task.title }}</p>
+          <p class="text-body-md text-on-surface flex-1 leading-snug flex items-center justify-between gap-2">
+            <span>{{ task.title }}</span>
+            <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
+              <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
+            </span>
+          </p>
           <button
-            @click="removeTask(task.id)"
-            class="text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity p-1"
+            @click.stop="removeTask(task.id)"
+            class="text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity p-1 shrink-0"
             title="Delete task"
           >
             <Icon name="material-symbols:close" class="text-[18px]" />

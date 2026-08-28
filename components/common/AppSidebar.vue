@@ -66,6 +66,15 @@ function navigateToExecute() {
         <Icon name="material-symbols:self-improvement" class="text-[24px]" />
         <span class="text-label-md">Recovery</span>
       </NuxtLink>
+
+      <NuxtLink
+        to="/share"
+        class="flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200"
+        :class="route.path === '/share' ? 'text-primary font-bold bg-primary-fixed/30' : 'text-on-surface-variant font-medium hover:text-primary hover:bg-surface-container-high'"
+      >
+        <Icon name="material-symbols:content-paste-go" class="text-[24px]" />
+        <span class="text-label-md">Media Share</span>
+      </NuxtLink>
     </div>
 
     <!-- Secondary Links -->

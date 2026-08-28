@@ -33,5 +33,14 @@ const route = useRoute()
       <Icon name="material-symbols:self-improvement" class="text-[22px]" />
       <span class="text-[10px] font-medium tracking-tight">Recovery</span>
     </NuxtLink>
+
+    <NuxtLink
+      to="/share"
+      class="flex flex-col items-center gap-0.5 px-4 py-1.5 rounded-2xl transition-all active:scale-95"
+      :class="route.path === '/share' ? 'text-primary font-bold bg-primary/10' : 'text-on-surface-variant hover:text-primary'"
+    >
+      <Icon name="material-symbols:content-paste-go" class="text-[22px]" />
+      <span class="text-[10px] font-medium tracking-tight">Share</span>
+    </NuxtLink>
   </nav>
 </template>

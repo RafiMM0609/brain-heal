@@ -5,7 +5,8 @@ let redisInstance: Redis | null = null
 export const REDIS_KEYS = {
   TASKS: 'neuralflow:tasks',
   DISTRACTIONS: 'neuralflow:distractions',
-  FOCUS_SESSION: 'neuralflow:focus_session'
+  FOCUS_SESSION: 'neuralflow:focus_session',
+  SHARE: 'neuralflow:share_items'
 }
 
 // In-memory fallback if Redis credentials are absent or fail
@@ -18,7 +19,8 @@ const inMemoryStore: Record<string, any> = {
     { id: 'task-5', title: 'Fix urgent server bug', quadrant: 'inbox', createdAt: new Date().toISOString(), completed: false }
   ],
   [REDIS_KEYS.DISTRACTIONS]: [],
-  [REDIS_KEYS.FOCUS_SESSION]: null
+  [REDIS_KEYS.FOCUS_SESSION]: null,
+  [REDIS_KEYS.SHARE]: []
 }
 
 export function getRedisClient(): Redis | null {
