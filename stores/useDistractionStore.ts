@@ -3,13 +3,14 @@ import type { DistractionItem } from '~/types/focus'
 import { useTaskStore } from '~/stores/useTaskStore'
 
 export const useDistractionStore = defineStore('distractions', () => {
+  const { apiFetch } = useApi()
   const distractions = ref<DistractionItem[]>([])
   const isLoading = ref(false)
 
   async function fetchDistractions() {
     try {
       isLoading.value = true
-      const res = await $fetch<{ distractions: DistractionItem[] }>('/api/distractions')
+      const res = await apiFetch<{ distractions: DistractionItem[] }>('/api/distractions')
       if (res && Array.isArray(res.distractions)) {
         distractions.value = res.distractions
       }
@@ -34,7 +35,7 @@ export const useDistractionStore = defineStore('distractions', () => {
     distractions.value.unshift(item)
 
     try {
-      const res = await $fetch<{ distraction: DistractionItem; distractions: DistractionItem[] }>('/api/distractions', {
+      const res = await apiFetch<{ distraction: DistractionItem; distractions: DistractionItem[] }>('/api/distractions', {
         method: 'POST',
         body: { content: trimmed }
       })
@@ -56,7 +57,7 @@ export const useDistractionStore = defineStore('distractions', () => {
       item.convertedToTask = true
 
       try {
-        await $fetch(`/api/distractions/${id}`, {
+        await apiFetch(`/api/distractions/${id}`, {
           method: 'PATCH',
           body: { convertedToTask: true }
         })

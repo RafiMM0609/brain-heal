@@ -11,11 +11,21 @@ const router = useRouter()
 const name = ref('')
 const email = ref('')
 const password = ref('')
+const errorMessage = ref('')
+const isLoading = ref(false)
 
-function handleRegister() {
-  if (email.value) {
-    authStore.loginWithEmail(email.value, name.value)
+async function handleRegister() {
+  errorMessage.value = ''
+  if (!name.value || !email.value || !password.value) return
+
+  isLoading.value = true
+  try {
+    await authStore.registerUser(name.value, email.value, password.value)
     router.push('/')
+  } catch (err: any) {
+    errorMessage.value = err.data?.statusMessage || err.statusMessage || err.message || 'Gagal mendaftar. Silakan coba lagi.'
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -51,6 +61,15 @@ function handleGuestAccess() {
       <div class="flex-grow border-t border-surface-variant"></div>
     </div>
 
+    <!-- Error Alert Banner -->
+    <div
+      v-if="errorMessage"
+      class="mb-4 p-3.5 rounded-xl bg-error-container text-on-error-container border border-error/20 flex items-start gap-2.5 text-sm"
+    >
+      <Icon name="material-symbols:warning-rounded" class="text-[20px] shrink-0 mt-0.5" />
+      <span>{{ errorMessage }}</span>
+    </div>
+
     <!-- Register Form -->
     <form @submit.prevent="handleRegister" class="space-y-4">
       <div>
@@ -60,7 +79,8 @@ function handleGuestAccess() {
           type="text"
           required
           placeholder="Dr. Alex Rivera"
-          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none"
+          :disabled="isLoading"
+          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none disabled:opacity-50"
         />
       </div>
 
@@ -71,7 +91,8 @@ function handleGuestAccess() {
           type="email"
           required
           placeholder="alex@cognitivelab.ai"
-          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none"
+          :disabled="isLoading"
+          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none disabled:opacity-50"
         />
       </div>
 
@@ -82,15 +103,18 @@ function handleGuestAccess() {
           type="password"
           required
           placeholder="••••••••"
-          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none"
+          :disabled="isLoading"
+          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none disabled:opacity-50"
         />
       </div>
 
       <button
         type="submit"
-        class="w-full py-3.5 mt-2 bg-primary text-on-primary rounded-xl font-bold text-base hover:bg-primary-container transition-colors shadow-sm"
+        :disabled="isLoading"
+        class="w-full py-3.5 mt-2 bg-primary text-on-primary rounded-xl font-bold text-base hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        Register Account
+        <Icon v-if="isLoading" name="material-symbols:progress-activity" class="animate-spin text-[20px]" />
+        <span>{{ isLoading ? 'Registering...' : 'Register Account' }}</span>
       </button>
     </form>
 

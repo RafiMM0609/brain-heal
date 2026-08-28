@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import type { TaskItem, QuadrantType } from '~/types/task'
 
 export const useTaskStore = defineStore('tasks', () => {
+  const { apiFetch } = useApi()
   const tasks = ref<TaskItem[]>([
     { id: 'task-1', title: 'Finalize Q3 Strategy Deck', quadrant: 'inbox', createdAt: new Date().toISOString(), completed: false },
     { id: 'task-2', title: 'Reply to vendor emails', quadrant: 'inbox', createdAt: new Date().toISOString(), completed: false },
@@ -23,7 +24,7 @@ export const useTaskStore = defineStore('tasks', () => {
   async function fetchTasks() {
     try {
       isLoading.value = true
-      const res = await $fetch<{ tasks: TaskItem[] }>('/api/tasks')
+      const res = await apiFetch<{ tasks: TaskItem[] }>('/api/tasks')
       if (res && Array.isArray(res.tasks)) {
         tasks.value = res.tasks
       }
@@ -49,7 +50,7 @@ export const useTaskStore = defineStore('tasks', () => {
     tasks.value.unshift(tempTask)
 
     try {
-      const res = await $fetch<{ task: TaskItem; tasks: TaskItem[] }>('/api/tasks', {
+      const res = await apiFetch<{ task: TaskItem; tasks: TaskItem[] }>('/api/tasks', {
         method: 'POST',
         body: { title: trimmed, quadrant }
       })
@@ -70,7 +71,7 @@ export const useTaskStore = defineStore('tasks', () => {
     }
 
     try {
-      await $fetch(`/api/tasks/${taskId}`, {
+      await apiFetch(`/api/tasks/${taskId}`, {
         method: 'PATCH',
         body: { quadrant: targetQuadrant }
       })
@@ -84,7 +85,7 @@ export const useTaskStore = defineStore('tasks', () => {
     if (task) {
       task.completed = !task.completed
       try {
-        await $fetch(`/api/tasks/${taskId}`, {
+        await apiFetch(`/api/tasks/${taskId}`, {
           method: 'PATCH',
           body: { completed: task.completed }
         })
@@ -101,7 +102,7 @@ export const useTaskStore = defineStore('tasks', () => {
     }
 
     try {
-      await $fetch(`/api/tasks/${taskId}`, {
+      await apiFetch(`/api/tasks/${taskId}`, {
         method: 'DELETE'
       })
     } catch (err) {

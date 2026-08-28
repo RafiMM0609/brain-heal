@@ -60,79 +60,73 @@ function toggleTimer() {
     <!-- Expanded Floating Anchor Bar -->
     <div
       v-else
-      class="bg-surface-bright/95 backdrop-blur-md border border-surface-variant shadow-2xl rounded-2xl p-3 sm:p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-on-surface"
+      class="bg-surface-bright/95 backdrop-blur-md border border-surface-variant shadow-2xl rounded-2xl px-3 py-2 sm:px-4 flex items-center justify-between gap-2 text-on-surface"
     >
       <!-- Left: Active Task Info -->
-      <div class="flex items-center gap-3 w-full sm:w-auto flex-1 min-w-0">
-        <div class="p-2.5 bg-primary/10 text-primary rounded-xl shrink-0 flex items-center justify-center">
-          <Icon name="material-symbols:anchor" class="text-[22px] animate-pulse" />
-        </div>
-
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="text-[10px] font-bold uppercase tracking-wider text-primary px-1.5 py-0.5 bg-primary/10 rounded">
-              Focus Anchor
-            </span>
-            <span class="text-xs text-outline hidden md:inline">Single-Task Lock</span>
-          </div>
-          <h3 class="text-sm sm:text-base font-bold text-on-surface truncate leading-snug" :title="focusStore.activeTaskTitle">
-            {{ focusStore.activeTaskTitle || 'Select a focus task...' }}
-          </h3>
-        </div>
+      <div class="flex items-center gap-2 flex-1 min-w-0">
+        <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
+        <h3 class="text-xs sm:text-sm font-bold text-on-surface truncate leading-snug" :title="focusStore.activeTaskTitle">
+          {{ focusStore.activeTaskTitle || 'Select focus task...' }}
+        </h3>
+        <button
+          @click="isSelectorOpen = true"
+          class="p-1 text-outline hover:text-primary rounded transition-colors shrink-0"
+          title="Switch active task"
+        >
+          <Icon name="material-symbols:edit-outline" class="text-[16px]" />
+        </button>
       </div>
 
       <!-- Right: Action & Controls -->
-      <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-surface-variant">
-        <!-- Timer Badge & Quick Play/Pause -->
-        <div class="flex items-center bg-surface-container-low border border-surface-variant rounded-lg p-1 gap-1">
-          <span class="text-xs font-mono font-bold text-primary px-2">
-            {{ focusStore.formattedTime }}
-          </span>
-          <button
-            @click="toggleTimer"
-            class="p-1.5 rounded-md hover:bg-primary/10 text-primary transition-colors flex items-center justify-center"
-            :title="focusStore.isRunning ? 'Pause Timer' : 'Start Timer'"
-          >
-            <Icon :name="focusStore.isRunning ? 'material-symbols:pause' : 'material-symbols:play-arrow'" class="text-[18px]" />
-          </button>
-        </div>
+      <div class="flex items-center gap-1.5 shrink-0">
+        <!-- Timer Badge -->
+        <span class="text-xs font-mono font-extrabold text-primary px-1.5 py-0.5 bg-primary/10 rounded">
+          {{ focusStore.formattedTime }}
+        </span>
 
-        <!-- Task Switcher button -->
+        <!-- Play / Pause Icon Button -->
         <button
-          @click="isSelectorOpen = true"
-          class="p-2 text-outline hover:text-primary hover:bg-surface-container-low rounded-lg transition-colors"
-          title="Switch active task"
+          @click="toggleTimer"
+          class="p-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary transition-colors flex items-center justify-center"
+          :title="focusStore.isRunning ? 'Pause Timer' : 'Start Timer'"
         >
-          <Icon name="material-symbols:edit" class="text-[20px]" />
+          <Icon :name="focusStore.isRunning ? 'material-symbols:pause-rounded' : 'material-symbols:play-arrow-rounded'" class="text-[20px]" />
         </button>
 
-        <!-- Distraction Dump Quick Trigger -->
+        <!-- Stop Timer Icon Button -->
+        <button
+          @click="focusStore.stopTimer()"
+          class="p-1.5 rounded-lg bg-surface-container-high hover:bg-error/20 hover:text-error text-outline transition-colors flex items-center justify-center"
+          title="Stop Timer"
+        >
+          <Icon name="material-symbols:stop-rounded" class="text-[20px]" />
+        </button>
+
+        <!-- Distraction Dump Quick Trigger Icon Button -->
         <button
           @click="focusStore.toggleDistractionDump()"
-          class="px-2.5 py-1.5 text-xs font-semibold bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-surface-variant rounded-lg transition-colors flex items-center gap-1.5 shrink-0"
-          title="Instant Distraction Dump (Alt + D)"
+          class="p-1.5 rounded-lg bg-secondary/10 hover:bg-secondary/20 text-secondary transition-colors flex items-center justify-center"
+          title="Dump Thought (Alt + D)"
         >
-          <Icon name="material-symbols:add-circle" class="text-[16px] text-secondary" />
-          <span class="hidden sm:inline">Dump</span>
-          <span class="text-[10px] text-outline font-mono bg-surface px-1 py-0.5 rounded border border-surface-variant">Alt+D</span>
+          <Icon name="material-symbols:lightbulb-outline" class="text-[20px]" />
         </button>
 
-        <!-- Enter Full Focus Mode Page -->
+        <!-- Enter Full Focus Mode Page Icon Button -->
         <button
           @click="navigateToFocusMode"
-          class="px-3 py-1.5 text-xs font-semibold bg-primary text-on-primary rounded-lg hover:bg-primary-container transition-colors flex items-center gap-1 shrink-0"
+          class="p-1.5 rounded-lg bg-surface-container-high hover:bg-primary/20 hover:text-primary text-outline transition-colors flex items-center justify-center"
+          title="Open Focus Page"
         >
-          <Icon name="material-symbols:bolt" class="text-[16px]" />
-          <span>Focus Page</span>
+          <Icon name="material-symbols:bolt" class="text-[20px]" />
         </button>
 
         <!-- Minimize toggle -->
         <button
           @click="isMinimized = true"
-          class="p-1.5 text-outline hover:text-on-surface transition-colors rounded-lg"
+          class="p-1 text-outline hover:text-on-surface transition-colors rounded"
           title="Minimize anchor bar"
         >
-          <Icon name="material-symbols:close-fullscreen" class="text-[18px]" />
+          <Icon name="material-symbols:close-fullscreen" class="text-[16px]" />
         </button>
       </div>
     </div>

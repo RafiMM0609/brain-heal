@@ -42,6 +42,17 @@ export function useRealtimeSync() {
             return
           }
 
+          // Check if payload is scoped to a specific user
+          const authStore = useAuthStore()
+          const currentUserIdentifier = authStore.user?.email || authStore.user?.id || 'guest-default'
+          if (payload.userIdentifier) {
+            const cleanCurrent = currentUserIdentifier.trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_')
+            const cleanPayloadUser = payload.userIdentifier.trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_')
+            if (cleanPayloadUser !== cleanCurrent) {
+              return // Event belongs to a different user
+            }
+          }
+
           const taskStore = useTaskStore()
           const focusStore = useFocusStore()
           const distractionStore = useDistractionStore()

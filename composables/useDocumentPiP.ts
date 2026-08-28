@@ -11,6 +11,11 @@ export function useDocumentPiP() {
   let pipDotEl: HTMLElement | null = null
   let pipToggleBtn: HTMLElement | null = null
 
+  const PLAY_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`
+  const PAUSE_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>`
+  const STOP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>`
+  const DUMP_SVG = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c-4.97 0-9 4.03-9 9 0 2.12.74 4.07 1.97 5.61L4.35 21l3.54-.83A8.96 8.96 0 0 0 12 21c4.97 0 9-4.03 9-9s-4.03-9-9-9z"/><line x1="12" y1="9" x2="12" y2="15"/><line x1="9" y1="12" x2="15" y2="12"/></svg>`
+
   onMounted(() => {
     isSupported.value = typeof window !== 'undefined' && 'documentPictureInPicture' in window
   })
@@ -25,7 +30,7 @@ export function useDocumentPiP() {
       pipTaskEl.title = title
     }
     if (pipModeEl) {
-      pipModeEl.textContent = focusStore.mode === 'work' ? 'Focus Anchor' : 'Resting Break'
+      pipModeEl.textContent = focusStore.mode === 'work' ? 'Focus' : 'Break'
     }
     if (pipDotEl) {
       const isWork = focusStore.mode === 'work'
@@ -33,7 +38,8 @@ export function useDocumentPiP() {
       pipDotEl.style.boxShadow = isWork ? '0 0 8px #22c55e' : '0 0 8px #38bdf8'
     }
     if (pipToggleBtn) {
-      pipToggleBtn.textContent = focusStore.isRunning ? '⏸ Pause' : '▶ Start'
+      pipToggleBtn.innerHTML = focusStore.isRunning ? PAUSE_SVG : PLAY_SVG
+      pipToggleBtn.title = focusStore.isRunning ? 'Pause Timer' : 'Start Timer'
       pipToggleBtn.style.backgroundColor = focusStore.isRunning ? '#15803d' : '#1e293b'
       pipToggleBtn.style.borderColor = focusStore.isRunning ? '#22c55e' : '#334155'
     }
@@ -66,8 +72,8 @@ export function useDocumentPiP() {
 
     try {
       const pipWin = await (window as any).documentPictureInPicture.requestWindow({
-        width: 400,
-        height: 210
+        width: 310,
+        height: 115
       })
 
       pipWindow.value = pipWin
@@ -75,7 +81,7 @@ export function useDocumentPiP() {
       // Setup window styles & Title
       pipWin.document.title = 'Focus Anchor'
       pipWin.document.body.style.margin = '0'
-      pipWin.document.body.style.padding = '14px 16px'
+      pipWin.document.body.style.padding = '10px 12px'
       pipWin.document.body.style.backgroundColor = '#090d16'
       pipWin.document.body.style.color = '#f8fafc'
       pipWin.document.body.style.fontFamily = 'system-ui, -apple-system, sans-serif'
@@ -86,16 +92,12 @@ export function useDocumentPiP() {
       pipWin.document.body.style.boxSizing = 'border-box'
       pipWin.document.body.style.userSelect = 'none'
 
-      // Top Header row: Subtle badge on left + Timer on right
+      // Top Header row: Mode Dot + Task Title
       const header = pipWin.document.createElement('div')
       header.style.display = 'flex'
       header.style.alignItems = 'center'
-      header.style.justifyContent = 'space-between'
-
-      const badgeContainer = pipWin.document.createElement('div')
-      badgeContainer.style.display = 'flex'
-      badgeContainer.style.alignItems = 'center'
-      badgeContainer.style.gap = '6px'
+      header.style.gap = '8px'
+      header.style.overflow = 'hidden'
 
       const dot = pipWin.document.createElement('span')
       dot.style.width = '8px'
@@ -103,79 +105,57 @@ export function useDocumentPiP() {
       dot.style.borderRadius = '50%'
       dot.style.backgroundColor = '#22c55e'
       dot.style.boxShadow = '0 0 8px #22c55e'
-      badgeContainer.appendChild(dot)
+      dot.style.flexShrink = '0'
+      header.appendChild(dot)
       pipDotEl = dot
 
-      const modeEl = pipWin.document.createElement('span')
-      modeEl.style.fontSize = '11px'
-      modeEl.style.fontWeight = '600'
-      modeEl.style.color = '#94a3b8'
-      modeEl.style.letterSpacing = '0.04em'
-      badgeContainer.appendChild(modeEl)
-      pipModeEl = modeEl
-
-      header.appendChild(badgeContainer)
-
-      const timeEl = pipWin.document.createElement('span')
-      timeEl.style.fontSize = '20px'
-      timeEl.style.fontWeight = '700'
-      timeEl.style.fontFamily = 'ui-monospace, SFMono-Regular, monospace'
-      timeEl.style.color = '#4ade80'
-      header.appendChild(timeEl)
-      pipTimeEl = timeEl
+      const taskEl = pipWin.document.createElement('span')
+      taskEl.style.fontSize = '12px'
+      taskEl.style.fontWeight = '600'
+      taskEl.style.color = '#cbd5e1'
+      taskEl.style.whiteSpace = 'nowrap'
+      taskEl.style.overflow = 'hidden'
+      taskEl.style.textOverflow = 'ellipsis'
+      taskEl.style.flex = '1'
+      header.appendChild(taskEl)
+      pipTaskEl = taskEl
 
       pipWin.document.body.appendChild(header)
 
-      // Ongoing Task Hero Card (Main Focus)
-      const taskCard = pipWin.document.createElement('div')
-      taskCard.style.backgroundColor = '#1e293b'
-      taskCard.style.border = '1px solid #334155'
-      taskCard.style.borderRadius = '10px'
-      taskCard.style.padding = '10px 14px'
-      taskCard.style.margin = '8px 0'
-      taskCard.style.display = 'flex'
-      taskCard.style.flexDirection = 'column'
-      taskCard.style.gap = '4px'
+      // Bottom Row: Monospace Timer + Icon Action Controls
+      const bottomRow = pipWin.document.createElement('div')
+      bottomRow.style.display = 'flex'
+      bottomRow.style.alignItems = 'center'
+      bottomRow.style.justifyContent = 'space-between'
+      bottomRow.style.gap = '10px'
 
-      const taskLabel = pipWin.document.createElement('div')
-      taskLabel.textContent = 'ONGOING TASK'
-      taskLabel.style.fontSize = '10px'
-      taskLabel.style.fontWeight = '700'
-      taskLabel.style.color = '#4ade80'
-      taskLabel.style.letterSpacing = '0.08em'
-      taskCard.appendChild(taskLabel)
+      // Timer Display
+      const timeEl = pipWin.document.createElement('span')
+      timeEl.style.fontSize = '26px'
+      timeEl.style.fontWeight = '800'
+      timeEl.style.fontFamily = 'ui-monospace, SFMono-Regular, monospace'
+      timeEl.style.color = '#4ade80'
+      timeEl.style.letterSpacing = '-0.02em'
+      bottomRow.appendChild(timeEl)
+      pipTimeEl = timeEl
 
-      const taskEl = pipWin.document.createElement('div')
-      taskEl.style.fontSize = '18px'
-      taskEl.style.fontWeight = '800'
-      taskEl.style.color = '#ffffff'
-      taskEl.style.lineHeight = '1.3'
-      taskEl.style.wordBreak = 'break-word'
-      taskEl.style.display = '-webkit-box'
-      ;(taskEl.style as any).webkitLineClamp = '2'
-      ;(taskEl.style as any).webkitBoxOrient = 'vertical'
-      taskEl.style.overflow = 'hidden'
-      taskEl.style.textOverflow = 'ellipsis'
-
-      taskCard.appendChild(taskEl)
-      pipWin.document.body.appendChild(taskCard)
-      pipTaskEl = taskEl
-
-      // Controls row
+      // Icon Controls Container
       const controls = pipWin.document.createElement('div')
       controls.style.display = 'flex'
       controls.style.alignItems = 'center'
-      controls.style.gap = '8px'
+      controls.style.gap = '6px'
 
+      // Start / Pause Icon Button
       const toggleBtn = pipWin.document.createElement('button')
-      toggleBtn.style.flex = '1'
+      toggleBtn.style.width = '36px'
+      toggleBtn.style.height = '36px'
+      toggleBtn.style.display = 'flex'
+      toggleBtn.style.alignItems = 'center'
+      toggleBtn.style.justifyContent = 'center'
       toggleBtn.style.backgroundColor = '#15803d'
       toggleBtn.style.color = '#ffffff'
       toggleBtn.style.border = '1px solid #22c55e'
       toggleBtn.style.borderRadius = '8px'
-      toggleBtn.style.padding = '8px 12px'
-      toggleBtn.style.fontSize = '13px'
-      toggleBtn.style.fontWeight = '600'
       toggleBtn.style.cursor = 'pointer'
 
       toggleBtn.onclick = () => {
@@ -188,15 +168,39 @@ export function useDocumentPiP() {
       controls.appendChild(toggleBtn)
       pipToggleBtn = toggleBtn
 
+      // Stop Icon Button
+      const stopBtn = pipWin.document.createElement('button')
+      stopBtn.innerHTML = STOP_SVG
+      stopBtn.title = 'Stop Timer'
+      stopBtn.style.width = '36px'
+      stopBtn.style.height = '36px'
+      stopBtn.style.display = 'flex'
+      stopBtn.style.alignItems = 'center'
+      stopBtn.style.justifyContent = 'center'
+      stopBtn.style.backgroundColor = '#1e293b'
+      stopBtn.style.color = '#ef4444'
+      stopBtn.style.border = '1px solid #334155'
+      stopBtn.style.borderRadius = '8px'
+      stopBtn.style.cursor = 'pointer'
+
+      stopBtn.onclick = () => {
+        focusStore.stopTimer()
+      }
+      controls.appendChild(stopBtn)
+
+      // Dump Thought Icon Button
       const dumpBtn = pipWin.document.createElement('button')
-      dumpBtn.textContent = '+ Dump (Alt+D)'
+      dumpBtn.innerHTML = DUMP_SVG
+      dumpBtn.title = 'Dump Thought (Alt+D)'
+      dumpBtn.style.width = '36px'
+      dumpBtn.style.height = '36px'
+      dumpBtn.style.display = 'flex'
+      dumpBtn.style.alignItems = 'center'
+      dumpBtn.style.justifyContent = 'center'
       dumpBtn.style.backgroundColor = '#1e293b'
-      dumpBtn.style.color = '#cbd5e1'
+      dumpBtn.style.color = '#38bdf8'
       dumpBtn.style.border = '1px solid #334155'
       dumpBtn.style.borderRadius = '8px'
-      dumpBtn.style.padding = '8px 12px'
-      dumpBtn.style.fontSize = '13px'
-      dumpBtn.style.fontWeight = '600'
       dumpBtn.style.cursor = 'pointer'
 
       dumpBtn.onclick = () => {
@@ -205,7 +209,8 @@ export function useDocumentPiP() {
       }
       controls.appendChild(dumpBtn)
 
-      pipWin.document.body.appendChild(controls)
+      bottomRow.appendChild(controls)
+      pipWin.document.body.appendChild(bottomRow)
 
       // Sync initial elements
       updatePiPElements()
@@ -238,3 +243,4 @@ export function useDocumentPiP() {
     togglePiP
   }
 }
+

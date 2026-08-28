@@ -75,6 +75,7 @@ export async function compressImageFile(
 }
 
 export const useShareStore = defineStore('share', () => {
+  const { apiFetch } = useApi()
   const items = ref<ShareItem[]>([])
   const isLoading = ref(false)
   const isUploading = ref(false)
@@ -83,7 +84,7 @@ export const useShareStore = defineStore('share', () => {
   async function fetchItems() {
     isLoading.value = true
     try {
-      const response = await $fetch<{ items: ShareItem[] }>('/api/share')
+      const response = await apiFetch<{ items: ShareItem[] }>('/api/share')
       items.value = response.items || []
     } catch (err) {
       console.error('[ShareStore] Failed to fetch shared items:', err)
@@ -99,7 +100,7 @@ export const useShareStore = defineStore('share', () => {
     isUploading.value = true
     uploadStatus.value = 'Sharing text...'
     try {
-      const res = await $fetch<{ success: boolean; item: ShareItem }>('/api/share', {
+      const res = await apiFetch<{ success: boolean; item: ShareItem }>('/api/share', {
         method: 'POST',
         body: {
           type: 'text',
@@ -129,7 +130,7 @@ export const useShareStore = defineStore('share', () => {
       const { dataUrl, formattedSize } = await compressImageFile(file)
       uploadStatus.value = `Uploading compressed image (${formattedSize})...`
 
-      const res = await $fetch<{ success: boolean; item: ShareItem }>('/api/share', {
+      const res = await apiFetch<{ success: boolean; item: ShareItem }>('/api/share', {
         method: 'POST',
         body: {
           type: 'image',
@@ -154,7 +155,7 @@ export const useShareStore = defineStore('share', () => {
   async function deleteItem(id: string) {
     items.value = items.value.filter((i) => i.id !== id)
     try {
-      await $fetch('/api/share', {
+      await apiFetch('/api/share', {
         method: 'DELETE',
         query: { id }
       })
@@ -167,7 +168,7 @@ export const useShareStore = defineStore('share', () => {
   async function clearAll() {
     items.value = []
     try {
-      await $fetch('/api/share', {
+      await apiFetch('/api/share', {
         method: 'DELETE',
         query: { clear: 'true' }
       })

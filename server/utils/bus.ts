@@ -3,6 +3,7 @@ import { EventEmitter } from 'node:events'
 export interface SyncEventPayload {
   type: 'tasks' | 'focus' | 'distractions' | 'share'
   action?: 'create' | 'update' | 'delete'
+  userIdentifier?: string
   timestamp: string
 }
 
@@ -12,10 +13,11 @@ class SyncBus extends EventEmitter {
     this.setMaxListeners(100)
   }
 
-  emitSync(type: 'tasks' | 'focus' | 'distractions' | 'share', action: 'create' | 'update' | 'delete' = 'update') {
+  emitSync(type: 'tasks' | 'focus' | 'distractions' | 'share', action: 'create' | 'update' | 'delete' = 'update', userIdentifier?: string) {
     const payload: SyncEventPayload = {
       type,
       action,
+      userIdentifier,
       timestamp: new Date().toISOString()
     }
     this.emit('sync', payload)

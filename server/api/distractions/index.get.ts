@@ -1,8 +1,10 @@
-import { REDIS_KEYS, redisGet } from '~/server/utils/redis'
+import { REDIS_KEYS, redisGet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
 import type { DistractionItem } from '~/types/focus'
 
-export default defineEventHandler(async () => {
-  const { data: distractions, isFallback } = await redisGet<DistractionItem[]>(REDIS_KEYS.DISTRACTIONS)
+export default defineEventHandler(async (event) => {
+  const userIdentifier = getAuthUserIdentifier(event)
+  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.DISTRACTIONS)
+  const { data: distractions, isFallback } = await redisGet<DistractionItem[]>(key)
   return {
     distractions: distractions || [],
     isFallback

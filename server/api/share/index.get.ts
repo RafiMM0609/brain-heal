@@ -1,4 +1,4 @@
-import { REDIS_KEYS, redisGet } from '~/server/utils/redis'
+import { REDIS_KEYS, redisGet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
 
 export interface ShareItem {
   id: string
@@ -9,8 +9,10 @@ export interface ShareItem {
   createdAt: string
 }
 
-export default defineEventHandler(async () => {
-  const { data, isFallback } = await redisGet<ShareItem[]>(REDIS_KEYS.SHARE)
+export default defineEventHandler(async (event) => {
+  const userIdentifier = getAuthUserIdentifier(event)
+  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.SHARE)
+  const { data, isFallback } = await redisGet<ShareItem[]>(key)
   return {
     items: Array.isArray(data) ? data : [],
     isFallback

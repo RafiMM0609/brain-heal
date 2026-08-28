@@ -1,9 +1,11 @@
-import { REDIS_KEYS, redisSet } from '~/server/utils/redis'
+import { REDIS_KEYS, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
 import { syncBus } from '~/server/utils/bus'
 import { schedulePushTimer, cancelPushTimer, storePushSubscription } from '~/server/utils/pushScheduler'
 import type { FocusSession } from '~/types/focus'
 
 export default defineEventHandler(async (event) => {
+  const userIdentifier = getAuthUserIdentifier(event)
+  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.FOCUS_SESSION)
   const body = await readBody<Partial<FocusSession> & { pushSubscription?: any }>(event)
 
   const session: FocusSession = {
@@ -25,7 +27,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Save session to Upstash Redis / store
-  await redisSet(REDIS_KEYS.FOCUS_SESSION, session)
+  await redisSet(key, session)
 
   // Handle Nitro Web Push Notification timer edge cases
   if (session.isRunning && session.targetEndTimestamp && session.targetEndTimestamp > Date.now()) {
@@ -53,7 +55,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // Broadcast sync event to all connected clients
-  syncBus.emitSync('focus', 'update')
+  syncBus.emitSync('focus', 'update', userIdentifier)
 
   return {
     session

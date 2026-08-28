@@ -1,8 +1,10 @@
-import { REDIS_KEYS, redisGet, redisSet } from '~/server/utils/redis'
+import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
 import { syncBus } from '~/server/utils/bus'
 import type { TaskItem, QuadrantType } from '~/types/task'
 
 export default defineEventHandler(async (event) => {
+  const userIdentifier = getAuthUserIdentifier(event)
+  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.TASKS)
   const body = await readBody<{ title?: string; quadrant?: QuadrantType }>(event)
   
   if (!body || !body.title || !body.title.trim()) {
@@ -12,7 +14,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { data: currentTasks } = await redisGet<TaskItem[]>(REDIS_KEYS.TASKS)
+  const { data: currentTasks } = await redisGet<TaskItem[]>(key)
   const taskList = currentTasks || []
 
   const newTask: TaskItem = {
@@ -24,10 +26,10 @@ export default defineEventHandler(async (event) => {
   }
 
   const updatedTasks = [newTask, ...taskList]
-  await redisSet(REDIS_KEYS.TASKS, updatedTasks)
+  await redisSet(key, updatedTasks)
 
   // Broadcast sync event to all connected clients
-  syncBus.emitSync('tasks', 'create')
+  syncBus.emitSync('tasks', 'create', userIdentifier)
 
   return {
     task: newTask,

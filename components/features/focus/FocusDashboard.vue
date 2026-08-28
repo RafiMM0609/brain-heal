@@ -23,7 +23,7 @@ const strokeColor = computed(() => {
     <!-- Active Focus Task Header Banner -->
     <div class="mb-4 sm:mb-6 text-center w-full px-4">
       <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 border border-primary/20 text-primary rounded-full text-[11px] sm:text-xs font-bold tracking-wider uppercase mb-2">
-        <Icon name="material-symbols:bolt" class="text-[14px]" :class="{ 'animate-spin': focusStore.isRunning }" />
+        <Icon name="material-symbols:bolt" class="text-[14px]" :class="{ 'animate-pulse': focusStore.isRunning }" />
         <span>Current Focus Anchor</span>
       </div>
 

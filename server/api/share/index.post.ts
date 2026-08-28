@@ -1,8 +1,10 @@
-import { REDIS_KEYS, redisGet, redisSet } from '~/server/utils/redis'
+import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
 import { syncBus } from '~/server/utils/bus'
 import type { ShareItem } from './index.get'
 
 export default defineEventHandler(async (event) => {
+  const userIdentifier = getAuthUserIdentifier(event)
+  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.SHARE)
   const body = await readBody<{
     type: 'text' | 'image'
     content: string
@@ -17,7 +19,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { data: existingItems } = await redisGet<ShareItem[]>(REDIS_KEYS.SHARE)
+  const { data: existingItems } = await redisGet<ShareItem[]>(key)
   const currentItems = Array.isArray(existingItems) ? existingItems : []
 
   const newItem: ShareItem = {
@@ -31,9 +33,9 @@ export default defineEventHandler(async (event) => {
 
   // Prepend new item and keep up to 50 items
   const updatedItems = [newItem, ...currentItems].slice(0, 50)
-  await redisSet(REDIS_KEYS.SHARE, updatedItems)
+  await redisSet(key, updatedItems)
 
-  syncBus.emitSync('share', 'create')
+  syncBus.emitSync('share', 'create', userIdentifier)
 
   return {
     success: true,

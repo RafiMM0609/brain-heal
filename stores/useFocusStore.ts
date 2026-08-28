@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import type { FocusMode, FocusSession } from '~/types/focus'
 
 export const useFocusStore = defineStore('focus', () => {
+  const { apiFetch } = useApi()
   const activeTaskId = ref<string | null>('task-1')
   const activeTaskTitle = ref<string>('Finalize Q3 Strategy Deck')
 
@@ -31,7 +32,7 @@ export const useFocusStore = defineStore('focus', () => {
 
   async function fetchSession() {
     try {
-      const res = await $fetch<{ session: FocusSession | null }>('/api/focus/session')
+      const res = await apiFetch<{ session: FocusSession | null }>('/api/focus/session')
       if (res && res.session) {
         if (res.session.taskId) activeTaskId.value = res.session.taskId
         if (res.session.taskTitle) activeTaskTitle.value = res.session.taskTitle
@@ -54,7 +55,7 @@ export const useFocusStore = defineStore('focus', () => {
   async function syncSession(completed = false) {
     try {
       const pushSubscription = getPushSubscriptionJSON()
-      await $fetch('/api/focus/session', {
+      await apiFetch('/api/focus/session', {
         method: 'POST',
         body: {
           taskId: activeTaskId.value || undefined,

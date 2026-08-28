@@ -10,11 +10,21 @@ const router = useRouter()
 
 const email = ref('')
 const password = ref('')
+const errorMessage = ref('')
+const isLoading = ref(false)
 
-function handleLogin() {
-  if (email.value) {
-    authStore.loginWithEmail(email.value, '')
+async function handleLogin() {
+  errorMessage.value = ''
+  if (!email.value || !password.value) return
+
+  isLoading.value = true
+  try {
+    await authStore.loginUser(email.value, password.value)
     router.push('/')
+  } catch (err: any) {
+    errorMessage.value = err.data?.statusMessage || err.statusMessage || err.message || 'Email atau password salah.'
+  } finally {
+    isLoading.value = false
   }
 }
 
@@ -35,7 +45,7 @@ function handleGuestAccess() {
       <p class="text-body-md text-on-surface-variant">Cognitive Calm Productivity Platform</p>
     </div>
 
-    <!-- Quick Guest Access Button (Primary requested feature) -->
+    <!-- Quick Guest Access Button -->
     <button
       @click="handleGuestAccess"
       class="w-full py-3.5 mb-6 bg-secondary-container text-on-secondary-container rounded-xl font-bold text-base hover:opacity-90 transition-all flex items-center justify-center gap-2 shadow-sm border border-secondary/20"
@@ -50,6 +60,15 @@ function handleGuestAccess() {
       <div class="flex-grow border-t border-surface-variant"></div>
     </div>
 
+    <!-- Error Alert Banner -->
+    <div
+      v-if="errorMessage"
+      class="mb-4 p-3.5 rounded-xl bg-error-container text-on-error-container border border-error/20 flex items-start gap-2.5 text-sm"
+    >
+      <Icon name="material-symbols:warning-rounded" class="text-[20px] shrink-0 mt-0.5" />
+      <span>{{ errorMessage }}</span>
+    </div>
+
     <!-- Login Form -->
     <form @submit.prevent="handleLogin" class="space-y-4">
       <div>
@@ -59,7 +78,8 @@ function handleGuestAccess() {
           type="email"
           required
           placeholder="doctor@cognitivelab.ai"
-          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none"
+          :disabled="isLoading"
+          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none disabled:opacity-50"
         />
       </div>
 
@@ -70,15 +90,18 @@ function handleGuestAccess() {
           type="password"
           required
           placeholder="••••••••"
-          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none"
+          :disabled="isLoading"
+          class="w-full p-3 bg-surface-container-low border border-surface-variant rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none disabled:opacity-50"
         />
       </div>
 
       <button
         type="submit"
-        class="w-full py-3.5 mt-2 bg-primary text-on-primary rounded-xl font-bold text-base hover:bg-primary-container transition-colors shadow-sm"
+        :disabled="isLoading"
+        class="w-full py-3.5 mt-2 bg-primary text-on-primary rounded-xl font-bold text-base hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        Sign In
+        <Icon v-if="isLoading" name="material-symbols:progress-activity" class="animate-spin text-[20px]" />
+        <span>{{ isLoading ? 'Signing In...' : 'Sign In' }}</span>
       </button>
     </form>
 

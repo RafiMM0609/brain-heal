@@ -1,8 +1,10 @@
-import { REDIS_KEYS, redisGet, redisSet } from '~/server/utils/redis'
+import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
 import { syncBus } from '~/server/utils/bus'
 import type { TaskItem, QuadrantType } from '~/types/task'
 
 export default defineEventHandler(async (event) => {
+  const userIdentifier = getAuthUserIdentifier(event)
+  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.TASKS)
   const id = getRouterParam(event, 'id')
   if (!id) {
     throw createError({
@@ -12,7 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody<{ title?: string; quadrant?: QuadrantType; completed?: boolean }>(event)
-  const { data: currentTasks } = await redisGet<TaskItem[]>(REDIS_KEYS.TASKS)
+  const { data: currentTasks } = await redisGet<TaskItem[]>(key)
   const taskList = currentTasks || []
 
   const index = taskList.findIndex(t => t.id === id)
@@ -32,10 +34,10 @@ export default defineEventHandler(async (event) => {
   }
 
   taskList[index] = updatedTask
-  await redisSet(REDIS_KEYS.TASKS, taskList)
+  await redisSet(key, taskList)
 
   // Broadcast sync event to all connected clients
-  syncBus.emitSync('tasks', 'update')
+  syncBus.emitSync('tasks', 'update', userIdentifier)
 
   return {
     task: updatedTask,

@@ -1,8 +1,10 @@
-import { REDIS_KEYS, redisGet, redisSet } from '~/server/utils/redis'
+import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
 import { syncBus } from '~/server/utils/bus'
 import type { DistractionItem } from '~/types/focus'
 
 export default defineEventHandler(async (event) => {
+  const userIdentifier = getAuthUserIdentifier(event)
+  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.DISTRACTIONS)
   const id = getRouterParam(event, 'id')
   if (!id) {
     throw createError({
@@ -12,7 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const body = await readBody<{ convertedToTask?: boolean; content?: string }>(event)
-  const { data: currentDistractions } = await redisGet<DistractionItem[]>(REDIS_KEYS.DISTRACTIONS)
+  const { data: currentDistractions } = await redisGet<DistractionItem[]>(key)
   const distractionList = currentDistractions || []
 
   const index = distractionList.findIndex(d => d.id === id)
@@ -31,10 +33,10 @@ export default defineEventHandler(async (event) => {
   }
 
   distractionList[index] = updatedItem
-  await redisSet(REDIS_KEYS.DISTRACTIONS, distractionList)
+  await redisSet(key, distractionList)
 
   // Broadcast sync event to all connected clients
-  syncBus.emitSync('distractions', 'update')
+  syncBus.emitSync('distractions', 'update', userIdentifier)
 
   return {
     distraction: updatedItem,
