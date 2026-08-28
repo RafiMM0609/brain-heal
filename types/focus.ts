@@ -1,0 +1,19 @@
+export type FocusMode = 'work' | 'shortBreak' | 'longBreak'
+
+export interface FocusSession {
+  id: string
+  taskId?: string
+  taskTitle?: string
+  mode: FocusMode
+  durationSeconds: number
+  elapsedSeconds: number
+  completed: boolean
+  timestamp: string
+}
+
+export interface DistractionItem {
+  id: string
+  content: string
+  createdAt: string
+  convertedToTask: boolean
+}

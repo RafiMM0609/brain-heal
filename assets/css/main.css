@@ -1,0 +1,111 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: theme('colors.background');
+    color: theme('colors.on-background');
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Priority Engine Matrix */
+.matrix-quadrant {
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.matrix-quadrant.drag-over {
+  border-color: #002446;
+  background-color: rgba(0, 36, 70, 0.05);
+}
+
+.task-card {
+  cursor: grab;
+  transition: box-shadow 0.2s ease, transform 0.2s ease, opacity 0.2s ease;
+}
+
+.task-card:active {
+  cursor: grabbing;
+}
+
+.task-card.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+
+/* Tooltip */
+.tooltip .tooltip-text {
+  visibility: hidden;
+  width: 250px;
+  background-color: #2e3132;
+  color: #f0f1f2;
+  text-align: left;
+  border-radius: 0.5rem;
+  padding: 12px;
+  position: absolute;
+  z-index: 100;
+  bottom: 125%;
+  left: 50%;
+  margin-left: -125px;
+  opacity: 0;
+  transition: opacity 0.3s;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.tooltip .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #2e3132 transparent transparent transparent;
+}
+
+.tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Pomodoro Circular Progress Timer */
+.timer-circle {
+  stroke-dasharray: 880;
+  transition: stroke-dashoffset 1s linear;
+}
+
+/* Recovery Ambient Breathing Animation */
+.breathe-animation {
+  animation: breathe 8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.5;
+  }
+}
+
+.soft-gradient {
+  background: radial-gradient(circle at center, #beecb9 0%, #f8f9fa 70%);
+}
+
+.glass-panel {
+  background: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.soft-shadow {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
