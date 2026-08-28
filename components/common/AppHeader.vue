@@ -64,17 +64,20 @@ const searchQuery = ref('')
         <Icon name="material-symbols:settings" class="text-[24px]" />
       </button>
 
-      <!-- User Profile Avatar & Badge -->
-      <div class="flex items-center gap-2">
+      <!-- User Profile Avatar & Badge / Name -->
+      <NuxtLink to="/login" class="flex items-center gap-2 cursor-pointer hover:opacity-90 transition-all" title="Account Settings">
         <img
           :src="authStore.user?.avatarUrl"
           :alt="authStore.user?.name || 'User Profile'"
-          class="w-9 h-9 rounded-full border border-outline-variant object-cover cursor-pointer hover:opacity-90"
+          class="w-9 h-9 rounded-full border border-outline-variant object-cover"
         />
-        <span v-if="authStore.user?.isGuest" class="hidden lg:inline-block text-[11px] px-2 py-0.5 bg-primary-fixed text-on-primary-fixed rounded-full font-semibold">
+        <span v-if="authStore.user?.isGuest" class="hidden lg:inline-block text-[11px] px-2.5 py-0.5 bg-primary-fixed text-on-primary-fixed rounded-full font-semibold uppercase tracking-wider">
           GUEST
         </span>
-      </div>
+        <span v-else-if="authStore.user?.name" class="hidden sm:inline-block text-sm font-semibold text-on-surface max-w-[140px] truncate">
+          {{ authStore.user.name }}
+        </span>
+      </NuxtLink>
     </div>
   </header>
 </template>
