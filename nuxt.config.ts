@@ -40,6 +40,7 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-title', content: 'NeuralFlow' }
       ],
       link: [
+        { rel: 'manifest', href: '/manifest.json' },
         { rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' },
         { rel: 'preconnect', href: 'https://fonts.googleapis.com' },
         { rel: 'preconnect', href: 'https://fonts.gstatic.com', crossorigin: '' },

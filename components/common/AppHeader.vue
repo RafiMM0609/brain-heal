@@ -10,7 +10,7 @@ const searchQuery = ref('')
 </script>
 
 <template>
-  <header class="bg-surface shadow-sm flex justify-between items-center w-full px-8 py-4 sticky top-0 z-30 border-b border-surface-variant">
+  <header class="bg-surface/95 backdrop-blur-md shadow-xs flex justify-between items-center w-full px-4 py-3 pt-safe md:px-8 md:py-4 sticky top-0 z-30 border-b border-surface-variant">
     <div class="flex items-center gap-4">
       <span class="text-headline-md font-bold text-primary block md:hidden">NeuralFlow</span>
       

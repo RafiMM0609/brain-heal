@@ -9,6 +9,11 @@ const draggedTaskId = ref<string | null>(null)
 const activeDragOverQuadrant = ref<QuadrantType | null>(null)
 
 const router = useRouter()
+const expandedTaskIds = ref<Record<string, boolean>>({})
+
+function toggleExpand(taskId: string) {
+  expandedTaskIds.value[taskId] = !expandedTaskIds.value[taskId]
+}
 
 // Drag and drop handlers
 function onDragStart(event: DragEvent, taskId: string) {
@@ -109,7 +114,12 @@ function startFocusOnTask(task: TaskItem) {
           >
             <div class="flex items-center gap-2 flex-1 min-w-0">
               <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
-              <span class="text-body-md text-on-surface truncate">{{ task.title }}</span>
+              <span
+                @click.stop="toggleExpand(task.id)"
+                :title="task.title"
+                class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1"
+                :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
+              >{{ task.title }}</span>
             </div>
             <button
               @click.stop="taskStore.deleteTask(task.id)"
@@ -183,7 +193,12 @@ function startFocusOnTask(task: TaskItem) {
             >
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
-                <span class="text-body-md text-on-surface font-medium truncate">{{ task.title }}</span>
+                <span
+                  @click.stop="toggleExpand(task.id)"
+                  :title="task.title"
+                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1"
+                  :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
+                >{{ task.title }}</span>
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button
@@ -243,7 +258,12 @@ function startFocusOnTask(task: TaskItem) {
             >
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
-                <span class="text-body-md text-on-surface font-medium truncate">{{ task.title }}</span>
+                <span
+                  @click.stop="toggleExpand(task.id)"
+                  :title="task.title"
+                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1"
+                  :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
+                >{{ task.title }}</span>
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button
@@ -303,7 +323,12 @@ function startFocusOnTask(task: TaskItem) {
             >
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
-                <span class="text-body-md text-on-surface truncate">{{ task.title }}</span>
+                <span
+                  @click.stop="toggleExpand(task.id)"
+                  :title="task.title"
+                  class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1"
+                  :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
+                >{{ task.title }}</span>
               </div>
               <button
                 @click.stop="taskStore.deleteTask(task.id)"
@@ -355,7 +380,12 @@ function startFocusOnTask(task: TaskItem) {
             >
               <div class="flex items-center gap-2 flex-1 min-w-0">
                 <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
-                <span class="text-body-md text-on-surface line-through text-outline truncate">{{ task.title }}</span>
+                <span
+                  @click.stop="toggleExpand(task.id)"
+                  :title="task.title"
+                  class="text-body-md text-on-surface line-through text-outline cursor-pointer select-text transition-all duration-150 flex-1"
+                  :class="expandedTaskIds[task.id] ? 'whitespace-normal break-words' : 'truncate group-hover:whitespace-normal group-hover:break-words'"
+                >{{ task.title }}</span>
               </div>
               <button
                 @click.stop="taskStore.deleteTask(task.id)"

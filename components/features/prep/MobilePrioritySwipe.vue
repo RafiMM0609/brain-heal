@@ -149,7 +149,7 @@ function startFocus() {
               <Icon name="material-symbols:drag-pan" class="text-outline text-[20px]" />
             </div>
 
-            <h3 class="text-xl font-bold text-on-surface leading-snug">
+            <h3 :title="activeTask.title" class="text-xl font-bold text-on-surface leading-snug break-words">
               {{ activeTask.title }}
             </h3>
           </div>

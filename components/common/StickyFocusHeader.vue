@@ -3,6 +3,7 @@ import { useFocusStore } from '~/stores/useFocusStore'
 
 const focusStore = useFocusStore()
 const router = useRouter()
+const route = useRoute()
 
 function toggleTimer() {
   if (focusStore.isRunning) {
@@ -19,8 +20,8 @@ function goToFocusPage() {
 
 <template>
   <header
-    v-if="focusStore.activeTaskTitle"
-    class="sticky top-0 left-0 right-0 z-40 bg-surface-bright/90 backdrop-blur-md border-b border-surface-variant px-3 py-2 flex items-center justify-between shadow-sm md:hidden transition-all"
+    v-if="focusStore.activeTaskTitle && route.path !== '/execute'"
+    class="sticky top-0 left-0 right-0 z-40 bg-surface-bright/95 backdrop-blur-md border-b border-surface-variant px-3.5 py-2.5 pt-safe flex items-center justify-between shadow-sm md:hidden transition-all"
   >
     <!-- Left Capsule: Active Task Info -->
     <div

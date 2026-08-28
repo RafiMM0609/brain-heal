@@ -73,10 +73,36 @@
   opacity: 1;
 }
 
+/* iOS PWA Safe Area Utilities */
+.pt-safe {
+  padding-top: max(0.5rem, env(safe-area-inset-top, 0px));
+}
+
+.pb-safe {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+}
+
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 /* Pomodoro Circular Progress Timer */
 .timer-circle {
   stroke-dasharray: 880;
-  transition: stroke-dashoffset 1s linear;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  filter: drop-shadow(0 4px 12px rgba(64, 104, 64, 0.25));
+}
+
+.timer-circle-work {
+  filter: drop-shadow(0 4px 14px rgba(0, 36, 70, 0.3));
+}
+
+.timer-glow {
+  box-shadow: 0 0 50px -10px rgba(0, 36, 70, 0.15);
+}
+
+.dark .timer-glow {
+  box-shadow: 0 0 50px -10px rgba(135, 164, 207, 0.2);
 }
 
 /* Recovery Ambient Breathing Animation */
@@ -100,12 +126,20 @@
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.7);
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+}
+
+.glass-card {
+  background: rgba(255, 255, 255, 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.3);
+  border: 1px solid rgba(225, 227, 228, 0.6);
 }
 
 .soft-shadow {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
 }
+

@@ -14,7 +14,7 @@ export const useFocusStore = defineStore('focus', () => {
   const isDistractionDumpOpen = ref<boolean>(false)
   const isRecoveryRequired = ref<boolean>(false)
 
-  const { playCompletionChime, sendNotification, requestNotificationPermission } = useAudioNotification()
+  const { playCompletionChime, sendNotification, requestNotificationPermission, getPushSubscriptionJSON, setupWebPush } = useAudioNotification()
 
   const remainingSeconds = computed(() => Math.max(0, durationSeconds.value - elapsedSeconds.value))
   
@@ -53,6 +53,7 @@ export const useFocusStore = defineStore('focus', () => {
 
   async function syncSession(completed = false) {
     try {
+      const pushSubscription = getPushSubscriptionJSON()
       await $fetch('/api/focus/session', {
         method: 'POST',
         body: {
@@ -63,7 +64,8 @@ export const useFocusStore = defineStore('focus', () => {
           elapsedSeconds: elapsedSeconds.value,
           isRunning: isRunning.value,
           targetEndTimestamp: targetEndTimestamp.value,
-          completed
+          completed,
+          pushSubscription
         }
       })
     } catch (err) {
@@ -152,16 +154,16 @@ export const useFocusStore = defineStore('focus', () => {
     targetEndTimestamp.value = null
   }
 
-  function startTimer() {
+  async function startTimer() {
     if (isRunning.value) return
-    requestNotificationPermission()
+    await requestNotificationPermission()
     
     // Set target end time based on remaining duration
     const remainingSecs = durationSeconds.value - elapsedSeconds.value
     targetEndTimestamp.value = Date.now() + remainingSecs * 1000
 
     startTimerLocalOnly()
-    syncSession()
+    await syncSession()
   }
 
   function pauseTimer() {

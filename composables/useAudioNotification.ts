@@ -1,5 +1,6 @@
 export function useAudioNotification() {
   let audioCtx: AudioContext | null = null
+  let currentPushSubscription: PushSubscription | null = null
 
   function getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null
@@ -52,20 +53,78 @@ export function useAudioNotification() {
     }
   }
 
-  // Request browser Web Notification permission
+  // Helper to convert VAPID base64 key to Uint8Array
+  function urlBase64ToUint8Array(base64String: string): Uint8Array {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4)
+    const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/')
+    const rawData = window.atob(base64)
+    const outputArray = new Uint8Array(rawData.length)
+    for (let i = 0; i < rawData.length; ++i) {
+      outputArray[i] = rawData.charCodeAt(i)
+    }
+    return outputArray
+  }
+
+  // Register Service Worker and subscribe to Web Push Notifications
+  async function setupWebPush(): Promise<PushSubscription | null> {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !('PushManager' in window)) {
+      return null
+    }
+
+    try {
+      // Register Service Worker
+      const registration = await navigator.serviceWorker.register('/sw.js')
+      await navigator.serviceWorker.ready
+
+      // Check existing subscription
+      let sub = await registration.pushManager.getSubscription()
+      if (!sub) {
+        // Fetch VAPID Public Key from Nitro Server
+        const { publicKey } = await $fetch<{ publicKey: string }>('/api/push/vapid-key')
+        if (publicKey) {
+          const applicationServerKey = urlBase64ToUint8Array(publicKey)
+          sub = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: applicationServerKey as unknown as BufferSource
+          })
+        }
+      }
+
+      if (sub) {
+        currentPushSubscription = sub
+        // Send subscription to server
+        await $fetch('/api/push/subscribe', {
+          method: 'POST',
+          body: sub.toJSON()
+        }).catch(() => {})
+      }
+
+      return sub
+    } catch (err) {
+      console.warn('[WebPush] Service Worker or Push Subscription failed:', err)
+      return null
+    }
+  }
+
+  // Request browser Web Notification permission & set up Web Push
   async function requestNotificationPermission() {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'default') {
         try {
-          await Notification.requestPermission()
+          const perm = await Notification.requestPermission()
+          if (perm === 'granted') {
+            await setupWebPush()
+          }
         } catch (e) {
           console.warn('[AudioNotification] Notification permission error:', e)
         }
+      } else if (Notification.permission === 'granted') {
+        await setupWebPush()
       }
     }
   }
 
-  // Send desktop/PWA notification
+  // Send desktop/PWA notification locally
   function sendNotification(title: string, body: string) {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       if (Notification.permission === 'granted') {
@@ -83,9 +142,15 @@ export function useAudioNotification() {
     }
   }
 
+  function getPushSubscriptionJSON() {
+    return currentPushSubscription ? currentPushSubscription.toJSON() : null
+  }
+
   return {
     playCompletionChime,
     requestNotificationPermission,
-    sendNotification
+    sendNotification,
+    setupWebPush,
+    getPushSubscriptionJSON
   }
 }

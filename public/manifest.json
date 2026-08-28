@@ -1,0 +1,19 @@
+{
+  "name": "NeuralFlow - Brain Heal",
+  "short_name": "NeuralFlow",
+  "description": "Productivity application designed to reduce cognitive load and protect deep work.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

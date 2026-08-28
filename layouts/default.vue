@@ -42,11 +42,11 @@ onUnmounted(() => {
       <!-- Distraction Dump Floating Action Button (FAB) on Mobile -->
       <button
         @click="focusStore.isDistractionDumpOpen = true"
-        class="fixed bottom-16 right-4 z-40 md:hidden w-14 h-14 rounded-full bg-primary text-on-primary shadow-2xl flex items-center justify-center active:scale-90 transition-all border-2 border-surface"
+        class="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] right-4 z-40 md:hidden w-12 h-12 rounded-full bg-primary text-on-primary shadow-xl flex items-center justify-center active:scale-95 transition-all border-2 border-surface-bright"
         title="Distraction Dump"
         aria-label="Distraction Dump"
       >
-        <Icon name="material-symbols:edit-note" class="text-[26px]" />
+        <Icon name="material-symbols:edit-note" class="text-[24px]" />
       </button>
 
       <!-- Mobile Bottom Navigation Bar -->
