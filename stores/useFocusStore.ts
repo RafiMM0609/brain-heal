@@ -89,19 +89,64 @@ export const useFocusStore = defineStore('focus', () => {
     }
   }
 
+  let timerWorker: Worker | null = null
+
+  function initWorker() {
+    if (!import.meta.client || typeof Worker === 'undefined') return null
+    try {
+      const code = `
+        let intervalId = null;
+        self.onmessage = function(e) {
+          if (e.data === 'start') {
+            if (intervalId) clearInterval(intervalId);
+            intervalId = setInterval(function() { self.postMessage('tick'); }, 500);
+          } else if (e.data === 'stop') {
+            if (intervalId) clearInterval(intervalId);
+            intervalId = null;
+          }
+        };
+      `
+      const blob = new Blob([code], { type: 'application/javascript' })
+      const worker = new Worker(URL.createObjectURL(blob))
+      worker.onmessage = (e) => {
+        if (e.data === 'tick') {
+          updateElapsedFromWallClock()
+        }
+      }
+      return worker
+    } catch (err) {
+      console.warn('[FocusStore] Web Worker timer initialization failed:', err)
+      return null
+    }
+  }
+
   function startTimerLocalOnly() {
     isRunning.value = true
     if (timerInterval.value) clearInterval(timerInterval.value)
-    updateElapsedFromWallClock()
+
+    if (!timerWorker && import.meta.client) {
+      timerWorker = initWorker()
+    }
+
+    if (timerWorker) {
+      timerWorker.postMessage('start')
+    }
+
+    // Fallback interval for environments without worker support
     timerInterval.value = setInterval(() => {
       updateElapsedFromWallClock()
     }, 500)
+
+    updateElapsedFromWallClock()
   }
 
   function pauseTimerLocalOnly() {
     if (timerInterval.value) {
       clearInterval(timerInterval.value)
       timerInterval.value = null
+    }
+    if (timerWorker) {
+      timerWorker.postMessage('stop')
     }
     isRunning.value = false
     targetEndTimestamp.value = null
@@ -190,6 +235,7 @@ export const useFocusStore = defineStore('focus', () => {
     isRecoveryRequired,
     fetchSession,
     setFocusTask,
+    updateElapsedFromWallClock,
     startTimer,
     pauseTimer,
     stopTimer,

@@ -210,7 +210,16 @@ export function useDocumentPiP() {
       // Sync initial elements
       updatePiPElements()
 
+      // Active unthrottled interval inside the PiP window context
+      const pipInterval = pipWin.setInterval(() => {
+        focusStore.updateElapsedFromWallClock()
+        updatePiPElements()
+      }, 500)
+
       pipWin.addEventListener('pagehide', () => {
+        if (pipInterval) {
+          pipWin.clearInterval(pipInterval)
+        }
         pipWindow.value = null
         pipTimeEl = null
         pipTaskEl = null
