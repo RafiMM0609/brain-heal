@@ -23,7 +23,7 @@ function handleClose() {
         class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-primary/40 backdrop-blur-sm"
         @click.self="handleClose"
       >
-        <div class="bg-surface rounded-t-2xl sm:rounded-xl border border-surface-variant shadow-2xl max-w-lg w-full overflow-hidden flex flex-col transform transition-all max-h-[90vh] sm:max-h-[80vh]">
+        <div class="bg-surface rounded-t-2xl sm:rounded-xl border border-surface-variant shadow-2xl max-w-lg w-full overflow-hidden flex flex-col transform transition-all max-h-[90vh] sm:max-h-[80vh] pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:pb-0">
           <!-- Mobile Bottom Sheet Drag Handle -->
           <div class="w-12 h-1.5 bg-outline/30 rounded-full mx-auto my-2 block sm:hidden shrink-0" />
 

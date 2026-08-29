@@ -15,5 +15,19 @@
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "Instant Dump",
+      "short_name": "Dump",
+      "description": "Quickly capture intrusive thoughts",
+      "url": "/?action=instant-dump",
+      "icons": [
+        {
+          "src": "/favicon.svg",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }

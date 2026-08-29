@@ -6,15 +6,27 @@ import AppModal from '~/components/ui/AppModal.vue'
 const focusStore = useFocusStore()
 const distractionStore = useDistractionStore()
 const distractionText = ref('')
-const textareaRef = ref<HTMLTextAreaElement | null>(null)
+const inputRef = ref<HTMLInputElement | null>(null)
 const justSaved = ref(false)
+
+function triggerHaptic() {
+  if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate(15)
+    } catch {
+      // Ignore if not supported or disallowed by browser policy
+    }
+  }
+}
 
 watch(
   () => focusStore.isDistractionDumpOpen,
   (isOpen) => {
     if (isOpen) {
       nextTick(() => {
-        textareaRef.value?.focus()
+        setTimeout(() => {
+          inputRef.value?.focus()
+        }, 50)
       })
     } else {
       distractionText.value = ''
@@ -24,21 +36,24 @@ watch(
 )
 
 function handleKeydown(e: KeyboardEvent) {
-  if (e.key === 'Enter' && !e.shiftKey) {
+  if (e.key === 'Enter') {
     e.preventDefault()
     handleSave()
   }
 }
 
 function handleSave() {
-  if (distractionText.value.trim()) {
-    distractionStore.addDistraction(distractionText.value)
-    distractionText.value = ''
-    justSaved.value = true
-    setTimeout(() => {
-      focusStore.isDistractionDumpOpen = false
-    }, 400)
-  }
+  const text = distractionText.value.trim()
+  if (!text) return
+
+  distractionStore.addDistraction(text)
+  distractionText.value = ''
+  justSaved.value = true
+  triggerHaptic()
+
+  setTimeout(() => {
+    focusStore.isDistractionDumpOpen = false
+  }, 400)
 }
 </script>
 
@@ -53,33 +68,45 @@ function handleSave() {
         <p class="text-body-md text-on-surface-variant leading-relaxed">
           Dump intrusive thoughts instantly to protect working memory.
         </p>
-        <span class="text-[11px] font-mono bg-surface-container-high text-outline px-2 py-1 rounded border border-surface-variant shrink-0">
+        <span class="hidden sm:inline-block text-[11px] font-mono bg-surface-container-high text-outline px-2 py-1 rounded border border-surface-variant shrink-0">
           Alt + D / Ctrl + K
         </span>
       </div>
 
       <div class="relative">
-        <textarea
-          ref="textareaRef"
-          v-model="distractionText"
-          @keydown="handleKeydown"
-          rows="4"
-          placeholder="Type intrusive thought... (e.g. 'Pay electric bill', 'Idea for newsletter') Press Enter to Dump."
-          class="w-full p-4 bg-surface-container-low border border-surface-variant rounded-xl text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none resize-none transition-all"
-        />
+        <form @submit.prevent="handleSave" class="flex gap-2">
+          <input
+            ref="inputRef"
+            v-model="distractionText"
+            type="text"
+            enterkeyhint="send"
+            autocomplete="off"
+            @keydown="handleKeydown"
+            placeholder="Type intrusive thought & press Enter..."
+            class="flex-1 px-4 py-3.5 bg-surface-container-low border border-surface-variant rounded-xl text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none transition-all shadow-inner"
+          />
+          <button
+            type="submit"
+            :disabled="!distractionText.trim()"
+            class="px-4 py-3.5 bg-primary text-on-primary rounded-xl font-semibold hover:bg-primary-container disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center shrink-0"
+            title="Dump Thought"
+          >
+            <Icon name="material-symbols:send" class="text-[20px]" />
+          </button>
+        </form>
 
         <div
           v-if="justSaved"
-          class="absolute inset-0 bg-primary-container/90 text-on-primary-container rounded-xl flex items-center justify-center font-bold text-sm transition-all"
+          class="absolute inset-0 bg-primary-container/95 text-on-primary-container rounded-xl flex items-center justify-center font-bold text-sm transition-all z-10 shadow-lg"
         >
-          <Icon name="material-symbols:check-circle" class="text-[20px] mr-2" />
+          <Icon name="material-symbols:check-circle" class="text-[22px] mr-2 text-primary" />
           Dumped to Working Memory! Resuming focus...
         </div>
       </div>
 
       <div class="flex items-center justify-between text-xs text-outline">
-        <span>Press <kbd class="px-1.5 py-0.5 bg-surface-container-high rounded font-mono">Enter</kbd> to save immediately</span>
-        <span>Press <kbd class="px-1.5 py-0.5 bg-surface-container-high rounded font-mono">Shift+Enter</kbd> for newline</span>
+        <span>Tekan <kbd class="px-1.5 py-0.5 bg-surface-container-high rounded font-mono">Enter</kbd> / <kbd class="px-1.5 py-0.5 bg-surface-container-high rounded font-mono">Send</kbd> untuk simpan</span>
+        <span class="text-[11px]">⚡ Instant Dump</span>
       </div>
 
       <!-- List of recent distraction logs -->
@@ -124,21 +151,6 @@ function handleSave() {
         </div>
       </div>
     </div>
-
-    <template #footer>
-      <button
-        @click="focusStore.isDistractionDumpOpen = false"
-        class="px-4 py-2 text-on-surface-variant hover:text-primary transition-colors text-sm font-medium"
-      >
-        Close
-      </button>
-      <button
-        @click="handleSave"
-        class="px-5 py-2 bg-primary text-on-primary rounded-lg text-sm font-semibold hover:bg-primary-container transition-colors flex items-center gap-1.5"
-      >
-        <Icon name="material-symbols:send" class="text-[18px]" />
-        <span>Dump Thought</span>
-      </button>
-    </template>
   </AppModal>
 </template>
+

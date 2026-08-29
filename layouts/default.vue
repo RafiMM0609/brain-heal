@@ -7,6 +7,7 @@ import MobileBottomNav from '~/components/common/MobileBottomNav.vue'
 import { useFocusStore } from '~/stores/useFocusStore'
 
 const focusStore = useFocusStore()
+const route = useRoute()
 
 function handleGlobalKeydown(e: KeyboardEvent) {
   // Shortcut: Alt + D OR Ctrl/Cmd + K
@@ -21,6 +22,9 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeydown)
+  if (route.query.action === 'instant-dump' || route.query.dump === 'true') {
+    focusStore.isDistractionDumpOpen = true
+  }
 })
 
 onUnmounted(() => {
