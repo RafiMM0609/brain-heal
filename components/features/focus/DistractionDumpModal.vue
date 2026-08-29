@@ -23,11 +23,16 @@ watch(
   () => focusStore.isDistractionDumpOpen,
   (isOpen) => {
     if (isOpen) {
-      nextTick(() => {
-        setTimeout(() => {
-          inputRef.value?.focus()
-        }, 50)
-      })
+      const doFocus = () => {
+        const el = inputRef.value || (document.getElementById('instant-dump-input') as HTMLInputElement | null)
+        if (el) {
+          el.focus()
+        }
+      }
+      doFocus()
+      nextTick(doFocus)
+      requestAnimationFrame(doFocus)
+      setTimeout(doFocus, 50)
     } else {
       distractionText.value = ''
       justSaved.value = false
@@ -76,9 +81,11 @@ function handleSave() {
       <div class="relative">
         <form @submit.prevent="handleSave" class="flex gap-2">
           <input
+            id="instant-dump-input"
             ref="inputRef"
             v-model="distractionText"
             type="text"
+            autofocus
             enterkeyhint="send"
             autocomplete="off"
             @keydown="handleKeydown"
