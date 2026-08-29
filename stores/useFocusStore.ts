@@ -14,6 +14,7 @@ export const useFocusStore = defineStore('focus', () => {
   const targetEndTimestamp = ref<number | null>(null)
   const isDistractionDumpOpen = ref<boolean>(false)
   const isRecoveryRequired = ref<boolean>(false)
+  const lastLocalActionTimestamp = ref<number>(0)
 
   const { playCompletionChime, sendNotification, requestNotificationPermission, getPushSubscriptionJSON, setupWebPush } = useAudioNotification()
 
@@ -34,6 +35,12 @@ export const useFocusStore = defineStore('focus', () => {
     try {
       const res = await apiFetch<{ session: FocusSession | null }>('/api/focus/session')
       if (res && res.session) {
+        if (res.session.timestamp) {
+          const serverTime = new Date(res.session.timestamp).getTime()
+          if (serverTime < lastLocalActionTimestamp.value) {
+            return // Ignore stale server session data
+          }
+        }
         if (res.session.taskId) activeTaskId.value = res.session.taskId
         if (res.session.taskTitle) activeTaskTitle.value = res.session.taskTitle
         if (res.session.mode) mode.value = res.session.mode
@@ -55,7 +62,7 @@ export const useFocusStore = defineStore('focus', () => {
   async function syncSession(completed = false) {
     try {
       const pushSubscription = getPushSubscriptionJSON()
-      await apiFetch('/api/focus/session', {
+      const res = await apiFetch<{ session: FocusSession }>('/api/focus/session', {
         method: 'POST',
         body: {
           taskId: activeTaskId.value || undefined,
@@ -69,12 +76,16 @@ export const useFocusStore = defineStore('focus', () => {
           pushSubscription
         }
       })
+      if (res && res.session && res.session.timestamp) {
+        lastLocalActionTimestamp.value = new Date(res.session.timestamp).getTime()
+      }
     } catch (err) {
       console.error('[FocusStore] Failed to sync focus session:', err)
     }
   }
 
   function setFocusTask(id: string, title: string) {
+    lastLocalActionTimestamp.value = Date.now()
     activeTaskId.value = id
     activeTaskTitle.value = title
     syncSession()
@@ -159,6 +170,7 @@ export const useFocusStore = defineStore('focus', () => {
     if (isRunning.value) return
     await requestNotificationPermission()
     
+    lastLocalActionTimestamp.value = Date.now()
     // Set target end time based on remaining duration
     const remainingSecs = durationSeconds.value - elapsedSeconds.value
     targetEndTimestamp.value = Date.now() + remainingSecs * 1000
@@ -168,23 +180,27 @@ export const useFocusStore = defineStore('focus', () => {
   }
 
   function pauseTimer() {
+    lastLocalActionTimestamp.value = Date.now()
     pauseTimerLocalOnly()
     syncSession()
   }
 
   function stopTimer() {
+    lastLocalActionTimestamp.value = Date.now()
     pauseTimerLocalOnly()
     elapsedSeconds.value = 0
     syncSession()
   }
 
   function skipTimer() {
-    pauseTimer()
+    lastLocalActionTimestamp.value = Date.now()
+    pauseTimerLocalOnly()
     completeTimer()
   }
 
   function completeTimer() {
-    pauseTimer()
+    lastLocalActionTimestamp.value = Date.now()
+    pauseTimerLocalOnly()
     syncSession(true)
     
     // Sound chime & haptic vibration
@@ -226,7 +242,8 @@ export const useFocusStore = defineStore('focus', () => {
   }
 
   function setMode(newMode: FocusMode, minutes: number) {
-    pauseTimer()
+    lastLocalActionTimestamp.value = Date.now()
+    pauseTimerLocalOnly()
     mode.value = newMode
     durationSeconds.value = minutes * 60
     elapsedSeconds.value = 0

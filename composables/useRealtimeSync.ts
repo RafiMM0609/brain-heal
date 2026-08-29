@@ -2,6 +2,7 @@ import { useTaskStore } from '~/stores/useTaskStore'
 import { useFocusStore } from '~/stores/useFocusStore'
 import { useDistractionStore } from '~/stores/useDistractionStore'
 import { useShareStore } from '~/stores/useShareStore'
+import { getClientId } from '~/composables/useApi'
 
 export function useRealtimeSync() {
   const isConnected = ref(false)
@@ -39,6 +40,12 @@ export function useRealtimeSync() {
 
           if (payload.type === 'connected') {
             isConnected.value = true
+            return
+          }
+
+          // Ignore self-echo events originating from this exact client tab
+          const currentClientId = getClientId()
+          if (payload.clientId && currentClientId && payload.clientId === currentClientId) {
             return
           }
 

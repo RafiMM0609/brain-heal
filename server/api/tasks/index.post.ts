@@ -28,8 +28,9 @@ export default defineEventHandler(async (event) => {
   const updatedTasks = [newTask, ...taskList]
   await redisSet(key, updatedTasks)
 
+  const clientId = getHeader(event, 'x-client-id') || undefined
   // Broadcast sync event to all connected clients
-  syncBus.emitSync('tasks', 'create', userIdentifier)
+  syncBus.emitSync('tasks', 'create', userIdentifier, clientId)
 
   return {
     task: newTask,

@@ -54,8 +54,10 @@ export default defineEventHandler(async (event) => {
     cancelPushTimer(session.id)
   }
 
+  const clientId = getHeader(event, 'x-client-id') || undefined
+
   // Broadcast sync event to all connected clients
-  syncBus.emitSync('focus', 'update', userIdentifier)
+  syncBus.emitSync('focus', 'update', userIdentifier, clientId)
 
   return {
     session
