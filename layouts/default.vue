@@ -16,14 +16,14 @@ function handleGlobalKeydown(e: KeyboardEvent) {
 
   if (isAltD || isCtrlK) {
     e.preventDefault()
-    focusStore.isDistractionDumpOpen = !focusStore.isDistractionDumpOpen
+    focusStore.openDistractionDump()
   }
 }
 
 onMounted(() => {
   window.addEventListener('keydown', handleGlobalKeydown)
   if (route.query.action === 'instant-dump' || route.query.dump === 'true') {
-    focusStore.isDistractionDumpOpen = true
+    focusStore.openDistractionDump()
   }
 })
 
@@ -45,7 +45,7 @@ onUnmounted(() => {
 
       <!-- Distraction Dump Floating Action Button (FAB) on Mobile -->
       <button
-        @click="focusStore.isDistractionDumpOpen = true"
+        @click="focusStore.openDistractionDump()"
         class="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] right-4 z-40 md:hidden w-12 h-12 rounded-full bg-primary text-on-primary shadow-xl flex items-center justify-center active:scale-95 transition-all border-2 border-surface-bright"
         title="Distraction Dump"
         aria-label="Distraction Dump"

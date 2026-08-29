@@ -201,8 +201,28 @@ export const useFocusStore = defineStore('focus', () => {
     }
   }
 
+  function openDistractionDump() {
+    isDistractionDumpOpen.value = true
+    if (import.meta.client) {
+      const focusTarget = () => {
+        const el = document.getElementById('instant-dump-input') as HTMLInputElement | null
+        if (el) {
+          el.focus()
+          el.click()
+        }
+      }
+      focusTarget()
+      requestAnimationFrame(focusTarget)
+      setTimeout(focusTarget, 50)
+    }
+  }
+
   function toggleDistractionDump() {
-    isDistractionDumpOpen.value = !isDistractionDumpOpen.value
+    if (isDistractionDumpOpen.value) {
+      isDistractionDumpOpen.value = false
+    } else {
+      openDistractionDump()
+    }
   }
 
   function setMode(newMode: FocusMode, minutes: number) {
@@ -243,6 +263,7 @@ export const useFocusStore = defineStore('focus', () => {
     pauseTimer,
     stopTimer,
     skipTimer,
+    openDistractionDump,
     toggleDistractionDump,
     setMode
   }
