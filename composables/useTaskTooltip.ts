@@ -16,11 +16,6 @@ export function useTaskTooltip() {
   function showTooltip(event: MouseEvent, title: string) {
     if (!title || typeof window === 'undefined') return
 
-    // Don't show tooltip on touch-primary devices
-    if ('ontouchstart' in window && window.matchMedia('(pointer: coarse)').matches) {
-      return
-    }
-
     const target = event.currentTarget as HTMLElement | null
     if (!target) return
 

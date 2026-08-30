@@ -2,12 +2,16 @@
 import { useTaskStore } from '~/stores/useTaskStore'
 import { useToast } from '~/composables/useToast'
 import { useTaskTooltip } from '~/composables/useTaskTooltip'
+import { useSwipeModal } from '~/composables/useSwipeModal'
+import { useTaskDetailModal } from '~/composables/useTaskDetailModal'
 import type { QuadrantType, TaskItem } from '~/types/task'
 import AppTooltip from '~/components/ui/AppTooltip.vue'
 
 const taskStore = useTaskStore()
 const { showToast } = useToast()
 const { showTooltip, hideTooltip } = useTaskTooltip()
+const { openSwipeModal } = useSwipeModal()
+const { openTaskDetail } = useTaskDetailModal()
 
 const quickAddInput = ref('')
 const draggedTaskId = ref<string | null>(null)
@@ -194,11 +198,6 @@ function handleContextComplete() {
       </div>
     </div>
 
-    <!-- Mobile Swipe Priority Engine (Visible on mobile screens lg:hidden) -->
-    <div class="block lg:hidden mb-8 bg-surface-bright border border-surface-variant rounded-2xl p-4 shadow-sm">
-      <MobilePrioritySwipe />
-    </div>
-
     <!-- Layout Grid: Raw Inbox + 4 Quadrants -->
     <div class="flex flex-col lg:flex-row gap-6 flex-1 min-h-[600px] min-w-0 w-full">
       <!-- Raw Inbox Column -->
@@ -211,7 +210,18 @@ function handleContextComplete() {
       >
         <div class="flex justify-between items-center mb-4 pb-2 border-b border-surface-variant">
           <h3 class="text-headline-md font-semibold text-on-surface">Raw Inbox</h3>
-          <Icon name="material-symbols:inbox" class="text-outline text-[24px]" />
+          <div class="flex items-center gap-2">
+            <button
+              v-if="taskStore.rawInbox.length > 0"
+              @click="openSwipeModal()"
+              class="px-2.5 py-1 bg-primary text-on-primary font-bold rounded-lg text-xs flex items-center gap-1.5 hover:bg-primary-container shadow-xs transition-all"
+              title="Buka Swipe Priority Mode"
+            >
+              <Icon name="material-symbols:swipe" class="text-[16px]" />
+              <span>Swipe Mode</span>
+            </button>
+            <Icon name="material-symbols:inbox" class="text-outline text-[24px]" />
+          </div>
         </div>
 
         <div class="flex-1 overflow-y-auto pr-1 space-y-3 min-h-[150px]">
@@ -222,7 +232,7 @@ function handleContextComplete() {
             @dragstart="onDragStart($event, task.id)"
             @dragend="onDragEnd"
             @contextmenu.prevent="onTaskContextMenu($event, task)"
-            @click="copyTaskText(task.title, task.id)"
+            @click="openTaskDetail(task)"
             @mouseenter="showTooltip($event, task.title)"
             @mouseleave="hideTooltip"
             class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/30 group cursor-pointer active:scale-[0.98] transition-all"
@@ -307,7 +317,7 @@ function handleContextComplete() {
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
               @contextmenu.prevent="onTaskContextMenu($event, task)"
-              @click="copyTaskText(task.title, task.id)"
+              @click="openTaskDetail(task)"
               @mouseenter="showTooltip($event, task.title)"
               @mouseleave="hideTooltip"
               class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-error/40 group cursor-pointer active:scale-[0.98] transition-all"
@@ -378,7 +388,7 @@ function handleContextComplete() {
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
               @contextmenu.prevent="onTaskContextMenu($event, task)"
-              @click="copyTaskText(task.title, task.id)"
+              @click="openTaskDetail(task)"
               @mouseenter="showTooltip($event, task.title)"
               @mouseleave="hideTooltip"
               class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/40 group cursor-pointer active:scale-[0.98] transition-all"
@@ -449,7 +459,7 @@ function handleContextComplete() {
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
               @contextmenu.prevent="onTaskContextMenu($event, task)"
-              @click="copyTaskText(task.title, task.id)"
+              @click="openTaskDetail(task)"
               @mouseenter="showTooltip($event, task.title)"
               @mouseleave="hideTooltip"
               class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group cursor-pointer hover:border-surface-variant/80 active:scale-[0.98] transition-all"
@@ -512,7 +522,7 @@ function handleContextComplete() {
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
               @contextmenu.prevent="onTaskContextMenu($event, task)"
-              @click="copyTaskText(task.title, task.id)"
+              @click="openTaskDetail(task)"
               @mouseenter="showTooltip($event, task.title)"
               @mouseleave="hideTooltip"
               class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group cursor-pointer hover:border-surface-variant/80 active:scale-[0.98] transition-all"

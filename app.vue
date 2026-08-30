@@ -52,4 +52,6 @@ onMounted(() => {
   </NuxtLayout>
   <AppToast />
   <AppTaskTooltip />
+  <AppTaskDetailModal />
+  <MobilePrioritySwipeModal />
 </template>

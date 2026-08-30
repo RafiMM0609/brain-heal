@@ -2,12 +2,16 @@
 import { useTaskStore } from '~/stores/useTaskStore'
 import { useToast } from '~/composables/useToast'
 import { useTaskTooltip } from '~/composables/useTaskTooltip'
+import { useSwipeModal } from '~/composables/useSwipeModal'
+import { useTaskDetailModal } from '~/composables/useTaskDetailModal'
 import type { QuadrantType, TaskItem } from '~/types/task'
 import TaskContextMenu from '~/components/ui/TaskContextMenu.vue'
 
 const taskStore = useTaskStore()
 const { showToast } = useToast()
 const { showTooltip, hideTooltip } = useTaskTooltip()
+const { openSwipeModal } = useSwipeModal()
+const { openTaskDetail } = useTaskDetailModal()
 const inputText = ref('')
 const isAnimating = ref(false)
 const copiedTaskId = ref<string | null>(null)
@@ -128,9 +132,20 @@ function removeTask(id: string) {
     <div class="mb-8">
       <div class="flex justify-between items-center mb-4">
         <h3 class="text-headline-md font-semibold text-on-surface">Raw Inbox Preview</h3>
-        <span class="text-label-md text-outline bg-surface-container-low px-3 py-1 rounded-full font-medium">
-          {{ taskStore.rawInbox.length }} Items
-        </span>
+        <div class="flex items-center gap-2">
+          <button
+            v-if="taskStore.rawInbox.length > 0"
+            @click="openSwipeModal()"
+            class="px-3 py-1 bg-primary text-on-primary font-bold rounded-lg text-xs flex items-center gap-1.5 hover:bg-primary-container shadow-xs transition-all"
+            title="Buka Swipe Priority Mode"
+          >
+            <Icon name="material-symbols:swipe" class="text-[16px]" />
+            <span>Swipe Mode</span>
+          </button>
+          <span class="text-label-md text-outline bg-surface-container-low px-3 py-1 rounded-full font-medium">
+            {{ taskStore.rawInbox.length }} Items
+          </span>
+        </div>
       </div>
 
       <div v-if="taskStore.rawInbox.length === 0" class="p-6 text-center border border-dashed border-surface-variant rounded-lg text-outline">
@@ -141,7 +156,7 @@ function removeTask(id: string) {
         <div
           v-for="task in taskStore.rawInbox"
           :key="task.id"
-          @click="copyTaskText(task.title, task.id)"
+          @click="openTaskDetail(task)"
           @mouseenter="showTooltip($event, task.title)"
           @mouseleave="hideTooltip"
           @contextmenu.prevent="onTaskContextMenu($event, task)"
