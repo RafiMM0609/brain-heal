@@ -51,4 +51,5 @@ onMounted(() => {
     <NuxtPage />
   </NuxtLayout>
   <AppToast />
+  <AppTaskTooltip />
 </template>

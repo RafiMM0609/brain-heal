@@ -1,15 +1,14 @@
-import { ref, readonly } from 'vue'
-
 export interface ToastData {
   id: number
   message: string
   type: 'success' | 'info' | 'warning' | 'error'
 }
 
-const toastState = ref<ToastData | null>(null)
 let toastTimer: ReturnType<typeof setTimeout> | null = null
 
 export function useToast() {
+  const toastState = useState<ToastData | null>('global_app_toast_state', () => null)
+
   function showToast(message: string, type: 'success' | 'info' | 'warning' | 'error' = 'success', duration = 3000) {
     if (toastTimer) {
       clearTimeout(toastTimer)
@@ -37,7 +36,7 @@ export function useToast() {
   }
 
   return {
-    toastState: readonly(toastState),
+    toastState,
     showToast,
     hideToast
   }

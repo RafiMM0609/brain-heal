@@ -1,15 +1,25 @@
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/useTaskStore'
 import { useToast } from '~/composables/useToast'
+import { useTaskTooltip } from '~/composables/useTaskTooltip'
 import type { QuadrantType, TaskItem } from '~/types/task'
 import AppTooltip from '~/components/ui/AppTooltip.vue'
 
 const taskStore = useTaskStore()
 const { showToast } = useToast()
+const { showTooltip, hideTooltip } = useTaskTooltip()
+
 const quickAddInput = ref('')
 const draggedTaskId = ref<string | null>(null)
 const activeDragOverQuadrant = ref<QuadrantType | null>(null)
 const justDraggedTimestamp = ref(0)
+const isTouchDevice = ref(false)
+
+onMounted(() => {
+  if (typeof window !== 'undefined') {
+    isTouchDevice.value = 'ontouchstart' in window || navigator.maxTouchPoints > 0
+  }
+})
 
 const router = useRouter()
 const copiedTaskId = ref<string | null>(null)
@@ -37,18 +47,17 @@ async function copyTaskText(text: string, taskId: string) {
       document.execCommand('copy')
       textArea.remove()
     }
-
-    if (copyTimeout) clearTimeout(copyTimeout)
-    copiedTaskId.value = taskId
-    copyTimeout = setTimeout(() => {
-      copiedTaskId.value = null
-    }, 1500)
-
-    showToast(`Tugas dicopy: ${text}`)
   } catch (err) {
-    console.error('Failed to copy task text:', err)
-    showToast(`Gagal menyalin tugas.`, 'error')
+    console.warn('Clipboard write fallback:', err)
   }
+
+  if (copyTimeout) clearTimeout(copyTimeout)
+  copiedTaskId.value = taskId
+  copyTimeout = setTimeout(() => {
+    copiedTaskId.value = null
+  }, 1500)
+
+  showToast(`Tugas dicopy: ${text}`)
 }
 
 // Drag and drop handlers
@@ -186,7 +195,7 @@ function handleContextComplete() {
     </div>
 
     <!-- Mobile Swipe Priority Engine (Visible on mobile screens lg:hidden) -->
-    <div v-if="taskStore.rawInbox.length > 0" class="block lg:hidden mb-8 bg-surface-bright border border-surface-variant rounded-2xl p-4 shadow-sm">
+    <div class="block lg:hidden mb-8 bg-surface-bright border border-surface-variant rounded-2xl p-4 shadow-sm">
       <MobilePrioritySwipe />
     </div>
 
@@ -209,29 +218,20 @@ function handleContextComplete() {
           <div
             v-for="task in taskStore.rawInbox"
             :key="task.id"
-            draggable="true"
+            :draggable="!isTouchDevice ? 'true' : false"
             @dragstart="onDragStart($event, task.id)"
             @dragend="onDragEnd"
             @contextmenu.prevent="onTaskContextMenu($event, task)"
-            class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/30 group/task relative cursor-pointer"
+            @click="copyTaskText(task.title, task.id)"
+            @mouseenter="showTooltip($event, task.title)"
+            @mouseleave="hideTooltip"
+            class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/30 group cursor-pointer active:scale-[0.98] transition-all"
             :class="{ 'dragging': draggedTaskId === task.id }"
           >
-            <!-- 0ms Custom Tooltip (Khusus Desktop) -->
-            <div
-              class="hidden md:block absolute left-0 bottom-[calc(100%+6px)] z-50 w-max max-w-xs sm:max-w-sm p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md opacity-0 pointer-events-none group-hover/task:opacity-100 transition-opacity duration-0 leading-snug break-words"
-            >
-              <div class="flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-primary mb-0.5">
-                <Icon name="material-symbols:info" class="text-[12px]" />
-                <span>Detail Tugas</span>
-              </div>
-              <span>{{ task.title }}</span>
-            </div>
-
-            <div class="flex items-center gap-2 flex-1 min-w-0">
-              <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
+            <div class="flex items-center gap-2 flex-1 min-w-0 pointer-events-none">
+              <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0 hidden sm:block" />
               <span
-                @click.stop="copyTaskText(task.title, task.id)"
-                class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover/task:whitespace-normal group-hover/task:break-words flex items-center gap-1.5"
+                class="text-body-md text-on-surface select-text transition-all duration-150 flex-1 min-w-0 flex items-center gap-1.5"
               >
                 <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                 <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
@@ -303,29 +303,20 @@ function handleContextComplete() {
             <div
               v-for="task in taskStore.doFirstTasks"
               :key="task.id"
-              draggable="true"
+              :draggable="!isTouchDevice ? 'true' : false"
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
               @contextmenu.prevent="onTaskContextMenu($event, task)"
-              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-error/40 group/task relative cursor-pointer"
+              @click="copyTaskText(task.title, task.id)"
+              @mouseenter="showTooltip($event, task.title)"
+              @mouseleave="hideTooltip"
+              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-error/40 group cursor-pointer active:scale-[0.98] transition-all"
               :class="{ 'dragging': draggedTaskId === task.id }"
             >
-              <!-- 0ms Custom Tooltip (Khusus Desktop) -->
-              <div
-                class="hidden md:block absolute left-0 bottom-[calc(100%+6px)] z-50 w-max max-w-xs sm:max-w-sm p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md opacity-0 pointer-events-none group-hover/task:opacity-100 transition-opacity duration-0 leading-snug break-words"
-              >
-                <div class="flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-primary mb-0.5">
-                  <Icon name="material-symbols:info" class="text-[12px]" />
-                  <span>Detail Tugas</span>
-                </div>
-                <span>{{ task.title }}</span>
-              </div>
-
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
+              <div class="flex items-center gap-2 flex-1 min-w-0 pointer-events-none">
+                <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0 hidden sm:block" />
                 <span
-                  @click.stop="copyTaskText(task.title, task.id)"
-                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover/task:whitespace-normal group-hover/task:break-words flex items-center gap-1.5"
+                  class="text-body-md text-on-surface font-medium select-text transition-all duration-150 flex-1 min-w-0 flex items-center gap-1.5"
                 >
                   <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                   <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
@@ -335,7 +326,7 @@ function handleContextComplete() {
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button
-                  @click="startFocusOnTask(task)"
+                  @click.stop="startFocusOnTask(task)"
                   class="px-2 py-1 bg-primary text-on-primary rounded text-xs hover:bg-primary-container transition-colors flex items-center gap-1"
                 >
                   <Icon name="material-symbols:bolt" class="text-[14px]" /> Focus
@@ -383,29 +374,20 @@ function handleContextComplete() {
             <div
               v-for="task in taskStore.scheduleTasks"
               :key="task.id"
-              draggable="true"
+              :draggable="!isTouchDevice ? 'true' : false"
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
               @contextmenu.prevent="onTaskContextMenu($event, task)"
-              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/40 group/task relative cursor-pointer"
+              @click="copyTaskText(task.title, task.id)"
+              @mouseenter="showTooltip($event, task.title)"
+              @mouseleave="hideTooltip"
+              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/40 group cursor-pointer active:scale-[0.98] transition-all"
               :class="{ 'dragging': draggedTaskId === task.id }"
             >
-              <!-- 0ms Custom Tooltip (Khusus Desktop) -->
-              <div
-                class="hidden md:block absolute left-0 bottom-[calc(100%+6px)] z-50 w-max max-w-xs sm:max-w-sm p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md opacity-0 pointer-events-none group-hover/task:opacity-100 transition-opacity duration-0 leading-snug break-words"
-              >
-                <div class="flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-primary mb-0.5">
-                  <Icon name="material-symbols:info" class="text-[12px]" />
-                  <span>Detail Tugas</span>
-                </div>
-                <span>{{ task.title }}</span>
-              </div>
-
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
+              <div class="flex items-center gap-2 flex-1 min-w-0 pointer-events-none">
+                <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0 hidden sm:block" />
                 <span
-                  @click.stop="copyTaskText(task.title, task.id)"
-                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover/task:whitespace-normal group-hover/task:break-words flex items-center gap-1.5"
+                  class="text-body-md text-on-surface font-medium select-text transition-all duration-150 flex-1 min-w-0 flex items-center gap-1.5"
                 >
                   <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                   <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
@@ -415,7 +397,7 @@ function handleContextComplete() {
               </div>
               <div class="flex items-center gap-1 shrink-0">
                 <button
-                  @click="startFocusOnTask(task)"
+                  @click.stop="startFocusOnTask(task)"
                   class="px-2 py-1 bg-primary text-on-primary rounded text-xs hover:bg-primary-container transition-colors flex items-center gap-1"
                 >
                   <Icon name="material-symbols:bolt" class="text-[14px]" /> Focus
@@ -463,29 +445,20 @@ function handleContextComplete() {
             <div
               v-for="task in taskStore.delegateTasks"
               :key="task.id"
-              draggable="true"
+              :draggable="!isTouchDevice ? 'true' : false"
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
               @contextmenu.prevent="onTaskContextMenu($event, task)"
-              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group/task relative cursor-pointer hover:border-surface-variant/80"
+              @click="copyTaskText(task.title, task.id)"
+              @mouseenter="showTooltip($event, task.title)"
+              @mouseleave="hideTooltip"
+              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group cursor-pointer hover:border-surface-variant/80 active:scale-[0.98] transition-all"
               :class="{ 'dragging': draggedTaskId === task.id }"
             >
-              <!-- 0ms Custom Tooltip (Khusus Desktop) -->
-              <div
-                class="hidden md:block absolute left-0 bottom-[calc(100%+6px)] z-50 w-max max-w-xs sm:max-w-sm p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md opacity-0 pointer-events-none group-hover/task:opacity-100 transition-opacity duration-0 leading-snug break-words"
-              >
-                <div class="flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-primary mb-0.5">
-                  <Icon name="material-symbols:info" class="text-[12px]" />
-                  <span>Detail Tugas</span>
-                </div>
-                <span>{{ task.title }}</span>
-              </div>
-
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
+              <div class="flex items-center gap-2 flex-1 min-w-0 pointer-events-none">
+                <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0 hidden sm:block" />
                 <span
-                  @click.stop="copyTaskText(task.title, task.id)"
-                  class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover/task:whitespace-normal group-hover/task:break-words flex items-center gap-1.5"
+                  class="text-body-md text-on-surface select-text transition-all duration-150 flex-1 min-w-0 flex items-center gap-1.5"
                 >
                   <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                   <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
@@ -535,29 +508,20 @@ function handleContextComplete() {
             <div
               v-for="task in taskStore.eliminateTasks"
               :key="task.id"
-              draggable="true"
+              :draggable="!isTouchDevice ? 'true' : false"
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
               @contextmenu.prevent="onTaskContextMenu($event, task)"
-              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group/task relative cursor-pointer hover:border-surface-variant/80"
+              @click="copyTaskText(task.title, task.id)"
+              @mouseenter="showTooltip($event, task.title)"
+              @mouseleave="hideTooltip"
+              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group cursor-pointer hover:border-surface-variant/80 active:scale-[0.98] transition-all"
               :class="{ 'dragging': draggedTaskId === task.id }"
             >
-              <!-- 0ms Custom Tooltip (Khusus Desktop) -->
-              <div
-                class="hidden md:block absolute left-0 bottom-[calc(100%+6px)] z-50 w-max max-w-xs sm:max-w-sm p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md opacity-0 pointer-events-none group-hover/task:opacity-100 transition-opacity duration-0 leading-snug break-words"
-              >
-                <div class="flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-primary mb-0.5">
-                  <Icon name="material-symbols:info" class="text-[12px]" />
-                  <span>Detail Tugas</span>
-                </div>
-                <span>{{ task.title }}</span>
-              </div>
-
-              <div class="flex items-center gap-2 flex-1 min-w-0">
-                <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0" />
+              <div class="flex items-center gap-2 flex-1 min-w-0 pointer-events-none">
+                <Icon name="material-symbols:drag-indicator" class="text-outline-variant text-[20px] cursor-grab shrink-0 hidden sm:block" />
                 <span
-                  @click.stop="copyTaskText(task.title, task.id)"
-                  class="text-body-md text-on-surface line-through text-outline cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover/task:whitespace-normal group-hover/task:break-words flex items-center gap-1.5"
+                  class="text-body-md text-on-surface line-through text-outline select-text transition-all duration-150 flex-1 min-w-0 flex items-center gap-1.5"
                 >
                   <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                   <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0 not-italic no-underline">

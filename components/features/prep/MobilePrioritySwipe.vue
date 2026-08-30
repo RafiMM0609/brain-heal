@@ -7,6 +7,15 @@ const taskStore = useTaskStore()
 const { showToast } = useToast()
 const router = useRouter()
 
+const quickInput = ref('')
+
+function handleQuickAdd() {
+  if (quickInput.value.trim()) {
+    taskStore.addTask(quickInput.value.trim(), 'inbox')
+    quickInput.value = ''
+  }
+}
+
 // Swipe gesture state
 const touchStartX = ref(0)
 const touchStartY = ref(0)
@@ -32,10 +41,10 @@ async function copyCardText(text: string) {
       document.execCommand('copy')
       textArea.remove()
     }
-    showToast(`Tugas dicopy: ${text}`)
   } catch (err) {
-    console.error('Failed to copy card text:', err)
+    console.warn('Clipboard write fallback:', err)
   }
+  showToast(`Tugas dicopy: ${text}`)
 }
 
 const cardStyle = computed(() => {
@@ -190,22 +199,44 @@ function startFocus() {
         </div>
       </div>
 
-      <!-- Inbox Clear State -->
-      <div v-else class="w-full h-full bg-surface-bright border-2 border-dashed border-primary/40 rounded-2xl p-6 flex flex-col items-center justify-center text-center shadow-sm">
-        <div class="w-14 h-14 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-3">
-          <Icon name="material-symbols:task-alt" class="text-[32px]" />
+      <!-- Inbox Clear / Quick Add State -->
+      <div v-else class="w-full h-full bg-surface-bright border-2 border-dashed border-primary/40 rounded-2xl p-5 flex flex-col items-center justify-between text-center shadow-sm min-h-[260px]">
+        <div>
+          <div class="w-12 h-12 rounded-full bg-primary/10 text-primary flex items-center justify-center mb-2 mx-auto">
+            <Icon name="material-symbols:task-alt" class="text-[28px]" />
+          </div>
+          <h3 class="text-base font-bold text-on-surface mb-1">Raw Inbox Clear</h3>
+          <p class="text-xs text-on-surface-variant mb-3">
+            All thoughts prioritized! Quick add a new task below to swipe & prioritize:
+          </p>
         </div>
-        <h3 class="text-lg font-bold text-on-surface mb-1">Inbox Categorized!</h3>
-        <p class="text-xs text-on-surface-variant mb-4">
-          All raw thoughts have been moved to matrix quadrants. Ready to lock into execution?
-        </p>
-        <button
-          @click="startFocus"
-          class="w-full py-3 bg-primary text-on-primary font-bold rounded-xl shadow-md hover:bg-primary-container transition-all flex items-center justify-center gap-2 text-sm"
-        >
-          <Icon name="material-symbols:bolt" class="text-[18px]" />
-          Enter Focus Mode
-        </button>
+
+        <div class="w-full space-y-3">
+          <div class="relative w-full">
+            <input
+              v-model="quickInput"
+              @keydown.enter="handleQuickAdd"
+              type="text"
+              placeholder="Quick add new task to swipe..."
+              class="w-full pl-3 pr-10 py-2.5 bg-surface-container-low border border-surface-variant rounded-xl text-xs text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright transition-all outline-none"
+            />
+            <button
+              @click="handleQuickAdd"
+              class="absolute right-1.5 top-1/2 -translate-y-1/2 text-primary p-1 hover:bg-primary-container hover:text-on-primary-container rounded-lg transition-colors"
+              title="Add task"
+            >
+              <Icon name="material-symbols:add-circle" class="text-[22px]" />
+            </button>
+          </div>
+
+          <button
+            @click="startFocus"
+            class="w-full py-2.5 bg-primary text-on-primary font-bold rounded-xl shadow-md hover:bg-primary-container transition-all flex items-center justify-center gap-2 text-xs"
+          >
+            <Icon name="material-symbols:bolt" class="text-[16px]" />
+            Enter Focus Mode
+          </button>
+        </div>
       </div>
     </div>
 
