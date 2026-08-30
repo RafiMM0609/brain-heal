@@ -4,6 +4,7 @@ import { useDocumentPiP } from '~/composables/useDocumentPiP'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const { pipWindow, isSupported, togglePiP } = useDocumentPiP()
 const { requestNotificationPermission } = useAudioNotification()
 
@@ -40,7 +41,10 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header class="bg-surface/95 backdrop-blur-md shadow-xs flex justify-between items-center w-full px-4 py-1 pt-safe md:px-6 md:py-1.5 h-12 sticky top-0 z-30 border-b border-surface-variant">
+  <header
+    class="bg-surface/95 backdrop-blur-md shadow-xs flex justify-between items-center w-full px-4 py-1 md:px-6 h-12 border-b border-surface-variant transition-all"
+    :class="route.path === '/execute' ? 'pt-safe' : 'md:pt-safe'"
+  >
     <div class="flex items-center gap-4">
       <span class="text-title-md font-bold text-primary block md:hidden">NeuralFlow</span>
     </div>
