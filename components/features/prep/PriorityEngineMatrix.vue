@@ -538,8 +538,5 @@ function handleContextComplete() {
       @complete="handleContextComplete"
       @delete="handleContextDelete"
     />
-
-    <!-- Mental Closure Modal -->
-    <MentalClosureModal />
   </div>
 </template>

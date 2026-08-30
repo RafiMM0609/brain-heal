@@ -58,7 +58,7 @@ export const useFocusStore = defineStore('focus', () => {
     }
   }
 
-  const { playCompletionChime, sendNotification, requestNotificationPermission, getPushSubscriptionJSON, setupWebPush } = useAudioNotification()
+  const { playCompletionChime, sendNotification, requestNotificationPermission, getPushSubscriptionJSON } = useAudioNotification()
 
   const remainingSeconds = computed(() => Math.max(0, durationSeconds.value - elapsedSeconds.value))
   
@@ -186,12 +186,12 @@ export const useFocusStore = defineStore('focus', () => {
 
     if (timerWorker) {
       timerWorker.postMessage('start')
+    } else {
+      // Fallback interval for environments without worker support
+      timerInterval.value = setInterval(() => {
+        updateElapsedFromWallClock()
+      }, 500)
     }
-
-    // Fallback interval for environments without worker support
-    timerInterval.value = setInterval(() => {
-      updateElapsedFromWallClock()
-    }, 500)
 
     updateElapsedFromWallClock()
   }

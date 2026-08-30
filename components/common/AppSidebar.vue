@@ -55,26 +55,12 @@ const mainNavItems: NavItem[] = [
   { label: 'Media Share', to: '/share', icon: 'material-symbols:content-paste-go' }
 ]
 
-const secondaryNavItems: NavItem[] = [
-  { label: 'Insights', to: '/insights', icon: 'material-symbols:monitoring' }
-]
-
-const allNavItems = [...mainNavItems, ...secondaryNavItems]
+const secondaryNavItems: NavItem[] = []
 
 function isLinkActive(path: string): boolean {
   if (path === '/') return route.path === '/'
   return route.path.startsWith(path)
 }
-
-const visibleNavItems = computed(() => {
-  if (!isCollapsed.value) {
-    return allNavItems
-  }
-  // When collapsed, show ONLY the active navigation icon
-  const active = allNavItems.filter(item => isLinkActive(item.to))
-  // Fallback if no specific route matches (e.g. login) so sidebar isn't empty
-  return active.length > 0 ? active : allNavItems
-})
 </script>
 
 <template>
@@ -173,36 +159,65 @@ const visibleNavItems = computed(() => {
         </div>
       </template>
 
-      <!-- Collapsed Mode: Render ONLY Active Icon(s) with prominent Active Marker -->
+      <!-- Collapsed Mode: Render ALL navigation icons -->
       <template v-else>
-        <div class="flex flex-col gap-4 items-center w-full my-auto">
+        <div class="flex flex-col gap-2 items-center w-full">
           <NuxtLink
-            v-for="item in visibleNavItems"
+            v-for="item in mainNavItems"
             :key="item.to"
             :to="item.to"
-            class="flex items-center justify-center transition-all duration-300 relative group"
+            class="flex items-center justify-center transition-all duration-200 relative group"
             :class="[
               isLinkActive(item.to)
-                ? 'w-12 h-12 rounded-xl bg-primary text-on-primary shadow-lg shadow-primary/30 scale-110 ring-2 ring-primary/40 ring-offset-2 ring-offset-surface-container-low'
+                ? 'w-10 h-10 rounded-xl bg-primary text-on-primary shadow-md shadow-primary/30 ring-2 ring-primary/40 ring-offset-2 ring-offset-surface-container-low'
                 : 'w-10 h-10 rounded-xl text-on-surface-variant hover:text-primary hover:bg-surface-container-high'
             ]"
+            :title="item.label"
           >
             <!-- Left Accent Indicator Bar for Active Icon -->
             <span
               v-if="isLinkActive(item.to)"
-              class="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-8 bg-primary rounded-r-full shadow-lg shadow-primary/50"
+              class="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-primary rounded-r-full shadow-md shadow-primary/50"
             ></span>
 
-            <!-- Pulsing Active Dot on top-right of active icon -->
-            <span v-if="isLinkActive(item.to)" class="absolute -top-1 -right-1 flex h-3 w-3 z-10">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-3 w-3 bg-primary border-2 border-surface-container-low"></span>
-            </span>
+            <Icon :name="item.icon" class="text-[22px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
 
-            <Icon :name="item.icon" class="text-[24px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
+            <!-- Floating Tooltip for collapsed mode -->
+            <div
+              class="absolute left-full ml-3 px-3 py-1.5 bg-surface-bright text-on-surface text-xs font-semibold rounded-lg shadow-xl border border-surface-variant opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 flex items-center gap-2"
+            >
+              <span>{{ item.label }}</span>
+              <span v-if="isLinkActive(item.to)" class="px-1.5 py-0.5 bg-primary/20 text-primary text-[10px] rounded font-bold uppercase">Active</span>
+            </div>
+          </NuxtLink>
 
-            <!-- Active Indicator Tooltip -->
-            <div class="absolute left-full ml-3 px-3 py-1.5 bg-surface-bright text-on-surface text-xs font-semibold rounded-lg shadow-xl border border-surface-variant opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 flex items-center gap-2">
+          <!-- Divider before secondary items -->
+          <div class="w-8 border-t border-outline-variant my-2"></div>
+
+          <NuxtLink
+            v-for="item in secondaryNavItems"
+            :key="item.to"
+            :to="item.to"
+            class="flex items-center justify-center transition-all duration-200 relative group"
+            :class="[
+              isLinkActive(item.to)
+                ? 'w-10 h-10 rounded-xl bg-primary text-on-primary shadow-md shadow-primary/30 ring-2 ring-primary/40 ring-offset-2 ring-offset-surface-container-low'
+                : 'w-10 h-10 rounded-xl text-on-surface-variant hover:text-primary hover:bg-surface-container-high'
+            ]"
+            :title="item.label"
+          >
+            <!-- Left Accent Indicator Bar for Active Icon -->
+            <span
+              v-if="isLinkActive(item.to)"
+              class="absolute -left-3 top-1/2 -translate-y-1/2 w-1.5 h-6 bg-primary rounded-r-full shadow-md shadow-primary/50"
+            ></span>
+
+            <Icon :name="item.icon" class="text-[22px] shrink-0 transition-transform duration-200 group-hover:scale-110" />
+
+            <!-- Floating Tooltip for collapsed mode -->
+            <div
+              class="absolute left-full ml-3 px-3 py-1.5 bg-surface-bright text-on-surface text-xs font-semibold rounded-lg shadow-xl border border-surface-variant opacity-0 group-hover:opacity-100 pointer-events-none transition-all duration-200 whitespace-nowrap z-50 flex items-center gap-2"
+            >
               <span>{{ item.label }}</span>
               <span v-if="isLinkActive(item.to)" class="px-1.5 py-0.5 bg-primary/20 text-primary text-[10px] rounded font-bold uppercase">Active</span>
             </div>

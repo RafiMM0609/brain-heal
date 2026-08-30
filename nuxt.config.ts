@@ -2,12 +2,7 @@ import fs from 'node:fs'
 import path from 'node:path'
 import dotenv from 'dotenv'
 
-// Load env-dev if exists
-const envDevPath = path.resolve(process.cwd(), 'env-dev')
-if (fs.existsSync(envDevPath)) {
-  dotenv.config({ path: envDevPath })
-}
-// Also load .env if exists
+// Load .env if exists
 const envPath = path.resolve(process.cwd(), '.env')
 if (fs.existsSync(envPath)) {
   dotenv.config({ path: envPath })
@@ -23,6 +18,7 @@ export default defineNuxtConfig({
   },
 
   modules: [
+    '@nuxt/eslint',
     '@pinia/nuxt',
     '@nuxtjs/tailwindcss',
     '@nuxt/icon'

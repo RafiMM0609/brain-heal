@@ -185,7 +185,7 @@ function formatTimeAgo(isoString: string): string {
   if (seconds < 30) return 'Baru saja'
   if (seconds < 60) return `${seconds} dtk yang lalu`
   const minutes = Math.floor(seconds / 60)
-  if (minutes < 60) return `${minutes} bln/mnt yang lalu`
+  if (minutes < 60) return `${minutes} mnt yang lalu`
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours} jam yang lalu`
   return date.toLocaleDateString('id-ID', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })

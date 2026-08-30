@@ -2,6 +2,7 @@
 import AppSidebar from '~/components/common/AppSidebar.vue'
 import AppHeader from '~/components/common/AppHeader.vue'
 import DistractionDumpModal from '~/components/features/focus/DistractionDumpModal.vue'
+import MentalClosureModal from '~/components/features/focus/MentalClosureModal.vue'
 import StickyFocusHeader from '~/components/common/StickyFocusHeader.vue'
 import MobileBottomNav from '~/components/common/MobileBottomNav.vue'
 import { useFocusStore } from '~/stores/useFocusStore'
@@ -65,5 +66,7 @@ onUnmounted(() => {
 
     <!-- Global Distraction Dump Modal / Bottom Sheet -->
     <DistractionDumpModal />
+    <!-- Global Mental Closure Modal -->
+    <MentalClosureModal />
   </div>
 </template>

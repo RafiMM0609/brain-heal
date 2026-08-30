@@ -7,7 +7,14 @@ const authStore = useAuthStore()
 const focusStore = useFocusStore()
 const router = useRouter()
 const { pipWindow, isSupported, togglePiP } = useDocumentPiP()
+const { requestNotificationPermission } = useAudioNotification()
 const searchQuery = ref('')
+
+function handleSearch() {
+  if (searchQuery.value.trim()) {
+    router.push({ path: '/', query: { search: searchQuery.value.trim() } })
+  }
+}
 
 const isProfileMenuOpen = ref(false)
 const profileMenuRef = ref<HTMLElement | null>(null)
@@ -51,6 +58,7 @@ onUnmounted(() => {
         <Icon name="material-symbols:search" class="absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]" />
         <input
           v-model="searchQuery"
+          @keydown.enter="handleSearch"
           type="text"
           placeholder="Search tasks..."
           class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright w-64 transition-all"
@@ -88,11 +96,21 @@ onUnmounted(() => {
         <span class="text-[10px] font-mono px-1.5 py-0.5 bg-surface-container-high text-outline rounded border border-surface-variant">Alt+D</span>
       </button>
 
-      <button aria-label="Notifications" class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center">
+      <button
+        @click="requestNotificationPermission"
+        aria-label="Notifications"
+        title="Enable Push Notifications"
+        class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center"
+      >
         <Icon name="material-symbols:notifications" class="text-[24px]" />
       </button>
 
-      <button aria-label="Settings" class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center">
+      <button
+        @click="focusStore.toggleDistractionDump"
+        aria-label="Settings"
+        title="Open Distraction Dump Settings"
+        class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center"
+      >
         <Icon name="material-symbols:settings" class="text-[24px]" />
       </button>
 

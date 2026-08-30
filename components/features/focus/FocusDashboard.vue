@@ -225,8 +225,5 @@ const modeLabel = computed(() => {
         <span class="text-xs font-bold text-on-surface">Distraction Dump</span>
       </button>
     </div>
-
-    <!-- Mental Closure Modal Component -->
-    <MentalClosureModal />
   </div>
 </template>

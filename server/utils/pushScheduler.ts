@@ -1,6 +1,6 @@
 import webPush from 'web-push'
 import { getVapidKeys } from './vapid'
-import { REDIS_KEYS, redisGet, redisSet } from './redis'
+import { redisGet, redisSet } from './redis'
 
 interface PushTimerEntry {
   timeoutId: NodeJS.Timeout

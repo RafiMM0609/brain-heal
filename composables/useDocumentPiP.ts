@@ -1,9 +1,8 @@
-import { useFocusStore } from '~/stores/useFocusStore'
+const pipWindow = ref<Window | null>(null)
+const isSupported = ref<boolean>(false)
 
 export function useDocumentPiP() {
   const focusStore = useFocusStore()
-  const pipWindow = ref<Window | null>(null)
-  const isSupported = ref<boolean>(false)
 
   let pipTimeEl: HTMLElement | null = null
   let pipTaskEl: HTMLElement | null = null
