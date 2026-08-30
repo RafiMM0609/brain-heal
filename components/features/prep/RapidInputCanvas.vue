@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/useTaskStore'
 import { useToast } from '~/composables/useToast'
-import { useTaskTooltip } from '~/composables/useTaskTooltip'
 import { useSwipeModal } from '~/composables/useSwipeModal'
 import { useTaskDetailModal } from '~/composables/useTaskDetailModal'
 import type { QuadrantType, TaskItem } from '~/types/task'
@@ -9,7 +8,6 @@ import TaskContextMenu from '~/components/ui/TaskContextMenu.vue'
 
 const taskStore = useTaskStore()
 const { showToast } = useToast()
-const { showTooltip, hideTooltip } = useTaskTooltip()
 const { openSwipeModal } = useSwipeModal()
 const { openTaskDetail } = useTaskDetailModal()
 const inputText = ref('')
@@ -47,6 +45,17 @@ function handleContextDelete() {
   }
 }
 
+function handleTaskClick(task: TaskItem) {
+  copyTaskText(task.title, task.id)
+  openTaskDetail(task)
+}
+
+function handleContextDetail() {
+  if (selectedTask.value) {
+    openTaskDetail(selectedTask.value)
+  }
+}
+
 async function copyTaskText(text: string, taskId: string) {
   try {
     if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
@@ -73,7 +82,7 @@ async function copyTaskText(text: string, taskId: string) {
     copiedTaskId.value = null
   }, 1500)
 
-  showToast(`Tugas dicopy: ${text}`)
+  showToast('📋 Copied!')
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -96,7 +105,7 @@ function removeTask(id: string) {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto flex flex-col min-h-[calc(100vh-120px)] justify-between">
+  <div class="max-w-6xl mx-auto flex flex-col min-h-[calc(100vh-120px)] justify-between">
     <!-- Header -->
     <header class="mb-8">
       <h2 class="text-display-lg font-bold text-on-surface mb-2">Rapid Input</h2>
@@ -156,26 +165,26 @@ function removeTask(id: string) {
         <div
           v-for="task in taskStore.rawInbox"
           :key="task.id"
-          @click="openTaskDetail(task)"
-          @mouseenter="showTooltip($event, task.title)"
-          @mouseleave="hideTooltip"
+          @click="handleTaskClick(task)"
           @contextmenu.prevent="onTaskContextMenu($event, task)"
-          class="bg-surface-container-lowest border border-surface-variant rounded-lg p-4 flex items-start gap-3 hover:border-primary/30 transition-colors soft-shadow group/task relative cursor-pointer active:scale-[0.98]"
+          class="bg-surface-container-lowest border border-surface-variant rounded-lg p-4 flex items-center gap-3 hover:border-primary/50 hover:bg-surface-container-low hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 soft-shadow group/task relative cursor-pointer active:scale-[0.98]"
         >
-          <div class="w-2.5 h-2.5 rounded-full bg-outline-variant mt-2 group-hover/task:bg-primary transition-colors shrink-0 pointer-events-none" />
-          <p class="text-body-md text-on-surface flex-1 min-w-0 leading-snug flex items-center justify-between gap-2 pointer-events-none">
-            <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
-            <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
+          <div class="w-2.5 h-2.5 rounded-full bg-outline-variant group-hover/task:bg-primary transition-colors shrink-0" />
+          <p class="text-body-md text-on-surface flex-1 min-w-0 leading-snug flex items-center justify-between gap-2">
+            <span class="line-clamp-3 break-words min-w-0 flex-1 leading-snug">{{ task.title }}</span>
+            <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0 animate-pulse">
               <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
             </span>
           </p>
-          <button
-            @click.stop="removeTask(task.id)"
-            class="text-outline hover:text-error opacity-0 group-hover/task:opacity-100 transition-opacity p-1 shrink-0"
-            title="Delete task"
-          >
-            <Icon name="material-symbols:close" class="text-[18px]" />
-          </button>
+          <div class="flex items-center gap-1 shrink-0">
+            <button
+              @click.stop="removeTask(task.id)"
+              class="text-outline hover:text-error opacity-0 group-hover/task:opacity-100 transition-opacity p-1 shrink-0"
+              title="Delete task"
+            >
+              <Icon name="material-symbols:close" class="text-[18px]" />
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -200,6 +209,7 @@ function removeTask(id: string) {
       :allow-focus="false"
       @close="contextMenuShow = false"
       @move="handleContextMove"
+      @detail="handleContextDetail"
       @delete="handleContextDelete"
     />
   </div>

@@ -12,6 +12,10 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-08-28',
   devtools: { enabled: true },
 
+  experimental: {
+    appManifest: false
+  },
+
   runtimeConfig: {
     upstashRedisRestUrl: process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || '',
     upstashRedisRestToken: process.env.UPSTASH_REDIS_REST_TOKEN || process.env.KV_REST_API_TOKEN || ''
@@ -22,6 +26,13 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     '@nuxtjs/tailwindcss',
     '@nuxt/icon'
+  ],
+
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false
+    }
   ],
 
   app: {

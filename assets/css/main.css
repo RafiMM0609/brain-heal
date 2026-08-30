@@ -35,43 +35,6 @@
   transform: scale(0.95);
 }
 
-/* Tooltip */
-.tooltip .tooltip-text {
-  visibility: hidden;
-  width: 250px;
-  background-color: #2e3132;
-  color: #f0f1f2;
-  text-align: left;
-  border-radius: 0.5rem;
-  padding: 12px;
-  position: absolute;
-  z-index: 100;
-  bottom: 125%;
-  left: 50%;
-  margin-left: -125px;
-  opacity: 0;
-  transition: opacity 0.3s;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  font-size: 12px;
-  font-weight: 400;
-  line-height: 1.4;
-}
-
-.tooltip .tooltip-text::after {
-  content: "";
-  position: absolute;
-  top: 100%;
-  left: 50%;
-  margin-left: -5px;
-  border-width: 5px;
-  border-style: solid;
-  border-color: #2e3132 transparent transparent transparent;
-}
-
-.tooltip:hover .tooltip-text {
-  visibility: visible;
-  opacity: 1;
-}
 
 /* iOS PWA Safe Area Utilities */
 .pt-safe {

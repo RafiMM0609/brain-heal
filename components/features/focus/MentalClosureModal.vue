@@ -79,68 +79,32 @@ function selectNextTask(id: string, title: string) {
     >
       <template #header>
         <div class="flex items-center gap-2">
-          <div class="w-7 h-7 rounded-full bg-secondary/15 text-secondary flex items-center justify-center">
-            <Icon name="material-symbols:psychology" class="text-[18px]" />
+          <div class="w-7 h-7 rounded-full bg-primary/15 text-primary flex items-center justify-center">
+            <Icon name="material-symbols:check-circle" class="text-[18px]" />
           </div>
-          <span class="text-xs font-extrabold uppercase tracking-wider text-secondary">Mental Closure</span>
+          <span class="text-xs font-extrabold uppercase tracking-wider text-primary">Task Finished</span>
         </div>
       </template>
 
-      <div class="space-y-5 text-on-surface">
-        <!-- Compact Victory Banner -->
-        <div class="rounded-xl bg-gradient-to-r from-primary/10 via-secondary/10 to-transparent p-3.5 border border-primary/20 flex items-center gap-3">
-          <div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
-            <Icon name="material-symbols:check-circle" class="text-[24px]" />
-          </div>
-          <div class="min-w-0 flex-1">
-            <div class="flex items-center gap-2">
-              <h3 class="text-base font-extrabold text-on-surface leading-tight">
-                Task Finished & Sealed! 🎉
-              </h3>
-              <span class="px-2 py-0.5 bg-surface-bright border border-surface-variant rounded-full text-[10px] font-bold text-primary shrink-0">
-                {{ sessionMinutes }}m Focus
-              </span>
-            </div>
-            <p class="text-xs font-semibold text-primary truncate mt-0.5">
-              "{{ taskTitle }}"
-            </p>
-          </div>
-        </div>
-
-        <!-- 1. Memory Offload Section -->
-        <div class="bg-surface-container-low rounded-xl p-4 border border-surface-variant space-y-2">
-          <div class="flex items-center justify-between">
-            <label for="closure-offload-note" class="text-xs font-bold text-on-surface flex items-center gap-1.5">
-              <Icon name="material-symbols:cloud-upload" class="text-[16px] text-primary" />
-              <span>Working Memory Offload</span>
-            </label>
-            <span class="text-[10px] text-outline font-medium">Zeigarnik Shield</span>
-          </div>
-
-          <p class="text-[11px] text-on-surface-variant leading-relaxed">
-            Offload any leftover thoughts or next steps directly into Inbox to clear your mind.
-          </p>
-
-          <textarea
+      <div class="space-y-4 text-on-surface">
+        <!-- 1-Line Offload Input -->
+        <div>
+          <input
             id="closure-offload-note"
             v-model="offloadNote"
-            rows="2"
-            placeholder="e.g. Next session: Send draft to client for review..."
-            class="w-full p-2.5 bg-surface border border-surface-variant rounded-lg text-xs sm:text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:border-primary transition-colors resize-none"
+            type="text"
+            placeholder="Any leftover thoughts or next steps? (Optional)"
+            class="w-full px-3.5 py-2.5 bg-surface border border-surface-variant rounded-xl text-xs sm:text-sm text-on-surface placeholder:text-outline/60 focus:outline-none focus:border-primary transition-colors"
           />
         </div>
 
-        <!-- 2. Next Action Options -->
-        <div class="space-y-2.5">
-          <p class="text-[11px] font-extrabold uppercase tracking-wider text-outline text-center">
-            What's Your Next Step?
-          </p>
-
+        <!-- 2 Primary Action Buttons -->
+        <div class="space-y-2 pt-1">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
               @click="finalizeClosure('nextTask')"
               :disabled="isSubmitting"
-              class="w-full py-3 px-4 bg-primary text-on-primary font-bold rounded-xl shadow-md hover:bg-primary-container transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-98 cursor-pointer"
+              class="w-full py-2.5 px-4 bg-primary text-on-primary font-bold rounded-xl shadow-xs hover:bg-primary-container transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-98 cursor-pointer"
             >
               <Icon name="material-symbols:bolt" class="text-[18px]" />
               <span>Anchor Next Task</span>
@@ -149,7 +113,7 @@ function selectNextTask(id: string, title: string) {
             <button
               @click="finalizeClosure('break')"
               :disabled="isSubmitting"
-              class="w-full py-3 px-4 bg-secondary text-on-secondary font-bold rounded-xl shadow-md hover:opacity-90 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-98 cursor-pointer"
+              class="w-full py-2.5 px-4 bg-secondary text-on-secondary font-bold rounded-xl shadow-xs hover:opacity-90 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-98 cursor-pointer"
             >
               <Icon name="material-symbols:local-cafe" class="text-[18px]" />
               <span>Take 5m Break</span>

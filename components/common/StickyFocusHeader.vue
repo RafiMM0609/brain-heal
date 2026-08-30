@@ -21,7 +21,7 @@ function goToFocusPage() {
 <template>
   <header
     v-if="route.path !== '/execute'"
-    class="sticky top-0 left-0 right-0 z-40 bg-surface-bright/95 backdrop-blur-md border-b border-surface-variant px-3.5 py-2.5 pt-safe flex items-center justify-between shadow-sm md:hidden transition-all"
+    class="sticky top-0 left-0 right-0 z-40 bg-surface-bright/95 backdrop-blur-md border-b border-surface-variant px-3.5 py-1.5 pt-safe flex items-center justify-between shadow-sm md:hidden transition-all"
   >
     <!-- Left Capsule: Active Task Info (Click to open Focus Page) -->
     <div

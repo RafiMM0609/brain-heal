@@ -40,44 +40,44 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <header class="bg-surface/95 backdrop-blur-md shadow-xs flex justify-between items-center w-full px-4 py-3 pt-safe md:px-8 md:py-4 sticky top-0 z-30 border-b border-surface-variant">
+  <header class="bg-surface/95 backdrop-blur-md shadow-xs flex justify-between items-center w-full px-4 py-1 pt-safe md:px-6 md:py-1.5 h-12 sticky top-0 z-30 border-b border-surface-variant">
     <div class="flex items-center gap-4">
-      <span class="text-headline-md font-bold text-primary block md:hidden">NeuralFlow</span>
+      <span class="text-title-md font-bold text-primary block md:hidden">NeuralFlow</span>
     </div>
 
     <nav class="hidden md:flex gap-6 items-center">
-      <NuxtLink to="/execute" class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 px-3 py-1 rounded-md">
+      <NuxtLink to="/execute" class="text-on-surface-variant font-medium hover:text-primary transition-colors duration-200 px-3 py-1 rounded-md text-xs">
         Focus Mode
       </NuxtLink>
     </nav>
 
-    <div class="flex items-center gap-3">
+    <div class="flex items-center gap-2">
       <!-- Document Picture-in-Picture Focus Anchor Trigger -->
       <button
         v-if="isSupported"
         @click="togglePiP()"
-        class="flex items-center gap-2 px-3 py-1.5 bg-primary text-on-primary rounded-lg font-label-md hover:bg-primary-container transition-colors duration-200 shadow-sm"
-        :class="{ 'bg-secondary text-on-secondary': pipWindow }"
+        class="p-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-full transition-colors duration-200 flex items-center justify-center"
+        :class="{ 'bg-secondary/20 text-secondary': pipWindow }"
         title="Open Always-on-Top Floating Focus Anchor (Picture-in-Picture)"
+        aria-label="Picture-in-Picture Focus Anchor"
       >
-        <Icon name="material-symbols:picture-in-picture-alt" class="text-[18px]" />
-        <span>{{ pipWindow ? 'Close PiP Anchor' : 'PiP Focus Anchor' }}</span>
+        <Icon name="material-symbols:picture-in-picture-alt" class="text-[20px]" />
       </button>
 
       <button
         @click="requestNotificationPermission"
         aria-label="Notifications"
         title="Enable Push Notifications"
-        class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center"
+        class="p-1.5 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center"
       >
-        <Icon name="material-symbols:notifications" class="text-[24px]" />
+        <Icon name="material-symbols:notifications" class="text-[20px]" />
       </button>
 
       <!-- User Profile Avatar & Badge / Name Dropdown Trigger -->
       <div ref="profileMenuRef" class="relative">
         <button
           @click.stop="toggleProfileMenu"
-          class="flex items-center gap-2 p-1.5 rounded-full hover:bg-surface-container-low transition-all border border-transparent hover:border-surface-variant focus:outline-none"
+          class="flex items-center gap-1.5 p-1 rounded-full hover:bg-surface-container-low transition-all border border-transparent hover:border-surface-variant focus:outline-none"
           :class="{ 'bg-surface-container-low border-surface-variant': isProfileMenuOpen }"
           title="Profile Menu"
           :aria-expanded="isProfileMenuOpen"
@@ -85,7 +85,7 @@ onUnmounted(() => {
           <img
             :src="authStore.user?.avatarUrl"
             :alt="authStore.user?.name || 'User Profile'"
-            class="w-9 h-9 rounded-full border border-outline-variant object-cover"
+            class="w-7 h-7 rounded-full border border-outline-variant object-cover"
           />
           <span v-if="authStore.user?.isGuest" class="hidden lg:inline-block text-[11px] px-2.5 py-0.5 bg-primary-fixed text-on-primary-fixed rounded-full font-semibold uppercase tracking-wider">
             GUEST

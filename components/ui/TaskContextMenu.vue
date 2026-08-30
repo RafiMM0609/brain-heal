@@ -18,6 +18,7 @@ const emit = defineEmits<{
   (e: 'close'): void
   (e: 'move', quadrant: QuadrantType): void
   (e: 'focus'): void
+  (e: 'detail'): void
   (e: 'complete'): void
   (e: 'delete'): void
 }>()
@@ -159,6 +160,11 @@ function triggerFocus() {
   emit('close')
 }
 
+function triggerDetail() {
+  emit('detail')
+  emit('close')
+}
+
 function triggerComplete() {
   emit('complete')
   emit('close')
@@ -226,45 +232,6 @@ function triggerDelete() {
                 </div>
               </div>
             </div>
-          </button>
-        </div>
-
-        <!-- Divider & Action Buttons -->
-        <div class="my-1.5 border-t border-surface-variant/60"></div>
-
-        <div class="space-y-0.5">
-          <!-- Complete Task (Mental Closure) -->
-          <button
-            @click="triggerComplete"
-            class="w-full px-2.5 py-1.5 rounded-xl text-left flex items-center gap-2.5 text-xs font-medium text-secondary hover:bg-secondary/15 transition-colors"
-          >
-            <div class="w-6 h-6 rounded-lg bg-secondary/15 flex items-center justify-center shrink-0">
-              <Icon name="material-symbols:check-circle-outline" class="text-[16px] text-secondary" />
-            </div>
-            <span>Complete & Close Mind</span>
-          </button>
-
-          <!-- Start Focus Mode -->
-          <button
-            v-if="allowFocus && task.quadrant !== 'inbox'"
-            @click="triggerFocus"
-            class="w-full px-2.5 py-1.5 rounded-xl text-left flex items-center gap-2.5 text-xs font-medium text-primary hover:bg-primary/10 transition-colors"
-          >
-            <div class="w-6 h-6 rounded-lg bg-primary/15 flex items-center justify-center shrink-0">
-              <Icon name="material-symbols:bolt" class="text-[16px] text-primary" />
-            </div>
-            <span>Start Focus Session</span>
-          </button>
-
-          <!-- Delete Task -->
-          <button
-            @click="triggerDelete"
-            class="w-full px-2.5 py-1.5 rounded-xl text-left flex items-center gap-2.5 text-xs font-medium text-error hover:bg-error-container/40 transition-colors"
-          >
-            <div class="w-6 h-6 rounded-lg bg-error-container/30 flex items-center justify-center shrink-0">
-              <Icon name="material-symbols:delete" class="text-[16px] text-error" />
-            </div>
-            <span>Delete Task</span>
           </button>
         </div>
       </div>

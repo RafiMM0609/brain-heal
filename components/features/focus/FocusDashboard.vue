@@ -27,15 +27,15 @@ const modeLabel = computed(() => {
 </script>
 
 <template>
-  <div class="flex flex-col items-center justify-center py-2 sm:py-6 relative w-full max-w-xl mx-auto">
+  <div class="flex flex-col items-center justify-center pt-0 pb-2 sm:pb-4 relative w-full max-w-3xl md:max-w-4xl mx-auto px-2">
     <!-- Active Focus Task Header Banner -->
-    <div class="mb-4 sm:mb-6 text-center w-full px-4">
+    <div class="mb-4 sm:mb-6 text-center w-full px-2 max-w-3xl mx-auto">
       <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 border border-primary/20 text-primary rounded-full text-[11px] sm:text-xs font-bold tracking-wider uppercase mb-2">
         <Icon name="material-symbols:bolt" class="text-[14px]" :class="{ 'animate-pulse': focusStore.isRunning }" />
         <span>Current Focus Anchor</span>
       </div>
 
-      <h2 class="text-xl sm:text-2xl font-extrabold text-on-surface line-clamp-2 leading-tight px-2" :title="focusStore.activeTaskTitle">
+      <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-on-surface leading-snug px-2 max-w-3xl mx-auto break-words" :title="focusStore.activeTaskTitle">
         {{ focusStore.activeTaskTitle || 'No Active Task Selected' }}
       </h2>
 
@@ -89,39 +89,6 @@ const modeLabel = computed(() => {
       </button>
     </div>
 
-    <!-- Cognitive Energy Battery Gauge Banner -->
-    <div class="w-full max-w-sm sm:max-w-lg bg-surface-bright border border-surface-variant/80 rounded-2xl p-3 mb-6 shadow-xs flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2.5">
-        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
-          <Icon name="material-symbols:bolt" class="text-[18px]" />
-        </div>
-        <div class="flex flex-col">
-          <div class="flex items-center gap-1.5">
-            <span class="text-xs font-extrabold text-on-surface">Cognitive Battery</span>
-            <span class="text-[10px] font-bold px-1.5 py-0.2 bg-primary/10 text-primary rounded-md">
-              {{ focusStore.energyPoints }} / {{ focusStore.maxEnergyPoints }} Pts
-            </span>
-          </div>
-          <span class="text-[11px] text-on-surface-variant leading-tight">
-            Deep (+2) | Quick (+1) &bull; Recovery at 4 Pts
-          </span>
-        </div>
-      </div>
-
-      <!-- Battery Segments Indicator -->
-      <div class="flex items-center gap-1 shrink-0 bg-surface-container px-2 py-1.5 rounded-xl border border-surface-variant/40">
-        <div
-          v-for="i in focusStore.maxEnergyPoints"
-          :key="i"
-          class="w-3.5 h-5 rounded-sm transition-all duration-300 flex items-center justify-center text-[10px]"
-          :class="i <= focusStore.energyPoints ? 'bg-primary text-on-primary shadow-xs scale-105' : 'bg-surface-container-highest border border-outline/30 text-outline/40'"
-          :title="`Point ${i} of ${focusStore.maxEnergyPoints}`"
-        >
-          <Icon v-if="i <= focusStore.energyPoints" name="material-symbols:bolt" class="text-[10px]" />
-        </div>
-      </div>
-    </div>
-
     <!-- Large SVG Circular Pomodoro Timer with Ambient Glow -->
     <div class="relative w-64 h-64 sm:w-72 sm:h-72 md:w-80 md:h-80 flex items-center justify-center mb-6 sm:mb-8">
       <!-- Ambient Backlight Blur Glow -->
@@ -156,14 +123,25 @@ const modeLabel = computed(() => {
 
     <!-- Timer Controls & Picture-in-Picture trigger -->
     <div class="flex flex-col items-center gap-4 mb-4 sm:mb-8 z-10 w-full">
-      <div class="flex items-center gap-6">
+      <div class="flex items-center justify-center gap-3 sm:gap-4 flex-wrap">
+        <!-- Complete Task & Close Mind Button (Logo/Icon only) -->
+        <button
+          @click="focusStore.openMentalClosure()"
+          class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-secondary/40 bg-secondary/10 text-secondary hover:bg-secondary hover:text-on-secondary transition-all shadow-sm active:scale-90 flex items-center justify-center group"
+          title="Complete Task & Close Mind"
+          aria-label="Complete Task & Close Mind"
+        >
+          <Icon name="material-symbols:check-circle-outline" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" />
+        </button>
+
         <!-- Reset / Stop Button -->
         <button
           @click="focusStore.stopTimer()"
-          class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-surface-variant bg-surface-bright flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary hover:bg-surface-container-low transition-all shadow-sm active:scale-90"
+          class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-surface-variant bg-surface-bright flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary hover:bg-surface-container-low transition-all shadow-sm active:scale-90 group"
           title="Reset session"
+          aria-label="Reset session"
         >
-          <Icon name="material-symbols:stop" class="text-[24px] sm:text-[28px]" />
+          <Icon name="material-symbols:stop" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" />
         </button>
 
         <!-- Play / Pause Main Button -->
@@ -174,43 +152,36 @@ const modeLabel = computed(() => {
           />
           <button
             @click="focusStore.isRunning ? focusStore.pauseTimer() : focusStore.startTimer()"
-            class="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-xl hover:shadow-2xl hover:opacity-95 transition-all active:scale-95 relative z-10 border-2 border-surface-bright"
+            class="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-xl hover:shadow-2xl hover:opacity-95 transition-all active:scale-95 relative z-10 border-2 border-surface-bright group"
             :title="focusStore.isRunning ? 'Pause' : 'Start'"
+            :aria-label="focusStore.isRunning ? 'Pause' : 'Start'"
           >
-            <Icon :name="focusStore.isRunning ? 'material-symbols:pause' : 'material-symbols:play-arrow'" class="text-[36px] sm:text-[42px]" />
+            <Icon :name="focusStore.isRunning ? 'material-symbols:pause' : 'material-symbols:play-arrow'" class="text-[36px] sm:text-[42px] transition-transform group-hover:scale-105" />
           </button>
         </div>
 
         <!-- Skip Button -->
         <button
           @click="focusStore.skipTimer()"
-          class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-surface-variant bg-surface-bright flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary hover:bg-surface-container-low transition-all shadow-sm active:scale-90"
+          class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-surface-variant bg-surface-bright flex items-center justify-center text-on-surface-variant hover:border-primary hover:text-primary hover:bg-surface-container-low transition-all shadow-sm active:scale-90 group"
           title="Skip session"
+          aria-label="Skip session"
         >
-          <Icon name="material-symbols:skip-next" class="text-[24px] sm:text-[28px]" />
+          <Icon name="material-symbols:skip-next" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" />
+        </button>
+
+        <!-- Picture-in-Picture Button (Logo/Icon only) -->
+        <button
+          v-if="isSupported"
+          @click="togglePiP()"
+          class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-primary/30 bg-surface-bright text-primary hover:bg-primary/10 transition-all shadow-sm active:scale-90 flex items-center justify-center group"
+          :class="{ 'bg-secondary text-on-secondary border-transparent hover:bg-secondary/90': pipWindow }"
+          :title="pipWindow ? 'Close Floating Window' : 'Pop out PiP Window'"
+          :aria-label="pipWindow ? 'Close Floating Window' : 'Pop out PiP Window'"
+        >
+          <Icon name="material-symbols:picture-in-picture-alt" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" />
         </button>
       </div>
-
-      <!-- Mental Closure Trigger Button -->
-      <button
-        @click="focusStore.openMentalClosure()"
-        class="mt-1 px-5 py-2.5 bg-gradient-to-r from-secondary-container to-primary/10 border border-secondary/30 rounded-full text-secondary font-bold text-xs sm:text-sm hover:border-secondary hover:shadow-md transition-all flex items-center gap-2 active:scale-95"
-        title="Trigger Mental Closure Ritual"
-      >
-        <Icon name="material-symbols:check-circle-outline" class="text-[20px] text-secondary" />
-        <span>Complete Task & Close Mind</span>
-      </button>
-
-      <!-- Pop out Document PiP Button (Desktop / Supported Browsers) -->
-      <button
-        v-if="isSupported"
-        @click="togglePiP()"
-        class="mt-1 px-4 py-2 bg-surface-bright border border-primary/30 rounded-xl text-primary font-semibold text-xs sm:text-sm hover:bg-primary/10 transition-colors flex items-center gap-2 shadow-sm"
-        :class="{ 'bg-secondary text-on-secondary border-transparent': pipWindow }"
-      >
-        <Icon name="material-symbols:picture-in-picture-alt" class="text-[18px]" />
-        <span>{{ pipWindow ? 'Close Floating Window' : 'Pop out PiP Window' }}</span>
-      </button>
     </div>
 
     <!-- Floating Distraction Dump Trigger (Desktop Only) -->

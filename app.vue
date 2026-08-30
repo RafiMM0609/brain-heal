@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { useFocusStore } from '~/stores/useFocusStore'
+import AppToast from '~/components/ui/AppToast.vue'
+import AppTaskDetailModal from '~/components/ui/AppTaskDetailModal.vue'
+import MobilePrioritySwipeModal from '~/components/features/prep/MobilePrioritySwipeModal.vue'
 
 const focusStore = useFocusStore()
 useRealtimeSync()
@@ -51,7 +54,6 @@ onMounted(() => {
     <NuxtPage />
   </NuxtLayout>
   <AppToast />
-  <AppTaskTooltip />
   <AppTaskDetailModal />
   <MobilePrioritySwipeModal />
 </template>

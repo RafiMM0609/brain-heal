@@ -46,7 +46,7 @@ onUnmounted(() => {
       <!-- Dynamic Island Sticky Top Bar on Mobile -->
       <StickyFocusHeader />
       <AppHeader />
-      <main class="flex-1 overflow-y-auto p-4 md:p-8 bg-background pb-24 md:pb-8">
+      <main class="flex-1 overflow-y-auto px-4 pt-2 pb-24 md:px-8 md:pt-2 md:pb-8 bg-background">
         <slot />
       </main>
 
