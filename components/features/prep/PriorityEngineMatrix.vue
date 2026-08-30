@@ -99,6 +99,51 @@ function startFocusOnTask(task: TaskItem) {
   focusStore.setFocusTask(task.id, task.title)
   router.push('/execute')
 }
+
+import TaskContextMenu from '~/components/ui/TaskContextMenu.vue'
+
+// Context menu state
+const contextMenuShow = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const selectedTask = ref<TaskItem | null>(null)
+
+function onTaskContextMenu(event: MouseEvent, task: TaskItem) {
+  event.preventDefault()
+  event.stopPropagation()
+  selectedTask.value = task
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuShow.value = true
+}
+
+function handleContextMove(targetQuadrant: QuadrantType) {
+  if (selectedTask.value) {
+    taskStore.moveTask(selectedTask.value.id, targetQuadrant)
+  }
+}
+
+function handleContextFocus() {
+  if (selectedTask.value) {
+    startFocusOnTask(selectedTask.value)
+  }
+}
+
+function handleContextDelete() {
+  if (selectedTask.value) {
+    taskStore.deleteTask(selectedTask.value.id)
+  }
+}
+
+function handleContextComplete() {
+  if (selectedTask.value) {
+    const focusStore = useFocusStore()
+    focusStore.openMentalClosure({
+      id: selectedTask.value.id,
+      title: selectedTask.value.title
+    })
+  }
+}
 </script>
 
 <template>
@@ -162,7 +207,8 @@ function startFocusOnTask(task: TaskItem) {
             draggable="true"
             @dragstart="onDragStart($event, task.id)"
             @dragend="onDragEnd"
-            class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/30 group"
+            @contextmenu.prevent="onTaskContextMenu($event, task)"
+            class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/30 group cursor-pointer"
             :class="{ 'dragging': draggedTaskId === task.id }"
           >
             <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -245,7 +291,8 @@ function startFocusOnTask(task: TaskItem) {
               draggable="true"
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
-              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-error/40 group"
+              @contextmenu.prevent="onTaskContextMenu($event, task)"
+              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-error/40 group cursor-pointer"
               :class="{ 'dragging': draggedTaskId === task.id }"
             >
               <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -314,7 +361,8 @@ function startFocusOnTask(task: TaskItem) {
               draggable="true"
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
-              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/40 group"
+              @contextmenu.prevent="onTaskContextMenu($event, task)"
+              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 hover:border-primary/40 group cursor-pointer"
               :class="{ 'dragging': draggedTaskId === task.id }"
             >
               <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -383,7 +431,8 @@ function startFocusOnTask(task: TaskItem) {
               draggable="true"
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
-              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group"
+              @contextmenu.prevent="onTaskContextMenu($event, task)"
+              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group cursor-pointer hover:border-surface-variant/80"
               :class="{ 'dragging': draggedTaskId === task.id }"
             >
               <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -444,7 +493,8 @@ function startFocusOnTask(task: TaskItem) {
               draggable="true"
               @dragstart="onDragStart($event, task.id)"
               @dragend="onDragEnd"
-              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group"
+              @contextmenu.prevent="onTaskContextMenu($event, task)"
+              class="task-card bg-surface p-3 rounded-lg border border-surface-variant shadow-sm flex items-center justify-between gap-2 group cursor-pointer hover:border-surface-variant/80"
               :class="{ 'dragging': draggedTaskId === task.id }"
             >
               <div class="flex items-center gap-2 flex-1 min-w-0">
@@ -475,5 +525,21 @@ function startFocusOnTask(task: TaskItem) {
         </div>
       </div>
     </div>
+
+    <!-- Floating Right-Click Context Menu -->
+    <TaskContextMenu
+      :show="contextMenuShow"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      :task="selectedTask"
+      @close="contextMenuShow = false"
+      @move="handleContextMove"
+      @focus="handleContextFocus"
+      @complete="handleContextComplete"
+      @delete="handleContextDelete"
+    />
+
+    <!-- Mental Closure Modal -->
+    <MentalClosureModal />
   </div>
 </template>

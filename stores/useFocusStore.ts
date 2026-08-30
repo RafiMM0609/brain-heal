@@ -13,8 +13,50 @@ export const useFocusStore = defineStore('focus', () => {
   const timerInterval = ref<any>(null)
   const targetEndTimestamp = ref<number | null>(null)
   const isDistractionDumpOpen = ref<boolean>(false)
+  const isMentalClosureOpen = ref<boolean>(false)
+  const closureTaskData = ref<{ id: string | null; title: string; sessionMinutes: number } | null>(null)
   const isRecoveryRequired = ref<boolean>(false)
   const lastLocalActionTimestamp = ref<number>(0)
+
+  function openMentalClosure(task?: { id?: string | null; title?: string; sessionMinutes?: number }) {
+    pauseTimerLocalOnly()
+    isMentalClosureOpen.value = true
+    closureTaskData.value = {
+      id: task?.id ?? activeTaskId.value,
+      title: task?.title ?? activeTaskTitle.value ?? 'Focus Task',
+      sessionMinutes: task?.sessionMinutes ?? Math.max(1, Math.round(elapsedSeconds.value / 60) || Math.round(durationSeconds.value / 60))
+    }
+  }
+
+  function closeMentalClosure() {
+    isMentalClosureOpen.value = false
+    closureTaskData.value = null
+  }
+
+  const energyPoints = ref<number>(0)
+  const maxEnergyPoints = ref<number>(4)
+
+  if (import.meta.client) {
+    const savedPoints = localStorage.getItem('brain_heal_energy_points')
+    if (savedPoints !== null) {
+      energyPoints.value = Math.min(4, Math.max(0, parseInt(savedPoints, 10) || 0))
+    }
+  }
+
+  function addEnergyPoints(pts: number) {
+    energyPoints.value = Math.min(maxEnergyPoints.value, energyPoints.value + pts)
+    if (import.meta.client) {
+      localStorage.setItem('brain_heal_energy_points', energyPoints.value.toString())
+    }
+  }
+
+  function resetEnergyPoints() {
+    energyPoints.value = 0
+    isRecoveryRequired.value = false
+    if (import.meta.client) {
+      localStorage.setItem('brain_heal_energy_points', '0')
+    }
+  }
 
   const { playCompletionChime, sendNotification, requestNotificationPermission, getPushSubscriptionJSON, setupWebPush } = useAudioNotification()
 
@@ -206,14 +248,31 @@ export const useFocusStore = defineStore('focus', () => {
     // Sound chime & haptic vibration
     playCompletionChime()
     
-    const notificationTitle = mode.value === 'work' ? 'Focus Session Completed! 🎯' : 'Break Time Ended! ⚡'
-    const notificationBody = mode.value === 'work' ? `Great job on "${activeTaskTitle.value}"! Time for a recharge break.` : 'Ready to dive back into deep work?'
+    const isWorkSession = mode.value === 'work' || mode.value === 'quickWork'
+
+    if (isWorkSession) {
+      const ptsToAdd = mode.value === 'work' ? 2 : 1
+      addEnergyPoints(ptsToAdd)
+    }
+
+    const notificationTitle = isWorkSession
+      ? (mode.value === 'work' ? 'Deep Work Completed! 🎯' : 'Quick Work Completed! ⚡')
+      : 'Break Time Ended! ⚡'
+    const notificationBody = isWorkSession
+      ? `Great job on "${activeTaskTitle.value}"! (${energyPoints.value}/${maxEnergyPoints.value} Cognitive Energy Points)`
+      : 'Ready to dive back into focus?'
     sendNotification(notificationTitle, notificationBody)
 
-    if (mode.value === 'work') {
+    if (isWorkSession) {
+      openMentalClosure({
+        id: activeTaskId.value,
+        title: activeTaskTitle.value || 'Focus Task',
+        sessionMinutes: Math.round(durationSeconds.value / 60)
+      })
+    }
+
+    if (isWorkSession && energyPoints.value >= maxEnergyPoints.value) {
       isRecoveryRequired.value = true
-      const router = useRouter()
-      router.push('/recovery')
     }
   }
 
@@ -272,7 +331,13 @@ export const useFocusStore = defineStore('focus', () => {
     progressPercent,
     isRunning,
     isDistractionDumpOpen,
+    isMentalClosureOpen,
+    closureTaskData,
     isRecoveryRequired,
+    energyPoints,
+    maxEnergyPoints,
+    resetEnergyPoints,
+    addEnergyPoints,
     fetchSession,
     setFocusTask,
     updateElapsedFromWallClock,
@@ -282,6 +347,8 @@ export const useFocusStore = defineStore('focus', () => {
     skipTimer,
     openDistractionDump,
     toggleDistractionDump,
+    openMentalClosure,
+    closeMentalClosure,
     setMode
   }
 })

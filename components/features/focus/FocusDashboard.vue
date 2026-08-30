@@ -14,7 +14,15 @@ const strokeDashoffset = computed(() => {
 
 const strokeColor = computed(() => {
   if (focusStore.mode === 'work') return '#002446'
+  if (focusStore.mode === 'quickWork') return '#0062a3'
   return '#406840'
+})
+
+const modeLabel = computed(() => {
+  if (focusStore.mode === 'work') return '🧠 Deep Work Session'
+  if (focusStore.mode === 'quickWork') return '⚡ Quick Work Session'
+  if (focusStore.mode === 'shortBreak') return '🌿 Short Break'
+  return '☕ Long Break'
 })
 </script>
 
@@ -43,33 +51,75 @@ const strokeColor = computed(() => {
     </div>
 
     <!-- Duration Mode Switcher -->
-    <div class="w-full max-w-sm sm:max-w-md p-1.5 bg-surface-container-low/90 backdrop-blur-md rounded-2xl mb-6 border border-surface-variant flex gap-1 shadow-sm">
+    <div class="w-full max-w-sm sm:max-w-lg p-1.5 bg-surface-container-low/90 backdrop-blur-md rounded-2xl mb-4 border border-surface-variant grid grid-cols-4 gap-1 shadow-sm">
       <button
         @click="focusStore.setMode('work', 25)"
-        class="flex-1 py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1 text-center"
+        class="py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 text-center"
         :class="focusStore.mode === 'work' ? 'bg-primary text-on-primary shadow-sm font-bold' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'"
       >
-        <span>Deep Work</span>
+        <span>Deep</span>
         <span class="text-[10px] opacity-75">(25m)</span>
       </button>
 
       <button
+        @click="focusStore.setMode('quickWork', 15)"
+        class="py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 text-center"
+        :class="focusStore.mode === 'quickWork' ? 'bg-primary text-on-primary shadow-sm font-bold' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'"
+      >
+        <span>Quick</span>
+        <span class="text-[10px] opacity-75">(15m)</span>
+      </button>
+
+      <button
         @click="focusStore.setMode('shortBreak', 5)"
-        class="flex-1 py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1 text-center"
+        class="py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 text-center"
         :class="focusStore.mode === 'shortBreak' ? 'bg-secondary text-on-secondary shadow-sm font-bold' : 'text-on-surface-variant hover:text-secondary hover:bg-surface-container'"
       >
-        <span>Short Break</span>
+        <span>Short</span>
         <span class="text-[10px] opacity-75">(5m)</span>
       </button>
 
       <button
         @click="focusStore.setMode('longBreak', 15)"
-        class="flex-1 py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1 text-center"
+        class="py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 text-center"
         :class="focusStore.mode === 'longBreak' ? 'bg-secondary text-on-secondary shadow-sm font-bold' : 'text-on-surface-variant hover:text-secondary hover:bg-surface-container'"
       >
-        <span>Long Break</span>
+        <span>Long</span>
         <span class="text-[10px] opacity-75">(15m)</span>
       </button>
+    </div>
+
+    <!-- Cognitive Energy Battery Gauge Banner -->
+    <div class="w-full max-w-sm sm:max-w-lg bg-surface-bright border border-surface-variant/80 rounded-2xl p-3 mb-6 shadow-xs flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2.5">
+        <div class="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-sm shrink-0">
+          <Icon name="material-symbols:bolt" class="text-[18px]" />
+        </div>
+        <div class="flex flex-col">
+          <div class="flex items-center gap-1.5">
+            <span class="text-xs font-extrabold text-on-surface">Cognitive Battery</span>
+            <span class="text-[10px] font-bold px-1.5 py-0.2 bg-primary/10 text-primary rounded-md">
+              {{ focusStore.energyPoints }} / {{ focusStore.maxEnergyPoints }} Pts
+            </span>
+          </div>
+          <span class="text-[11px] text-on-surface-variant leading-tight">
+            Deep (+2) | Quick (+1) &bull; Recovery at 4 Pts
+          </span>
+        </div>
+      </div>
+
+      <!-- Battery Segments Indicator -->
+      <div class="flex items-center gap-1 shrink-0 bg-surface-container px-2 py-1.5 rounded-xl border border-surface-variant/40">
+        <div
+          v-for="i in focusStore.maxEnergyPoints"
+          :key="i"
+          class="w-3.5 h-5 rounded-sm transition-all duration-300 flex items-center justify-center text-[10px]"
+          :class="i <= focusStore.energyPoints ? 'bg-primary text-on-primary shadow-xs scale-105' : 'bg-surface-container-highest border border-outline/30 text-outline/40'"
+          :title="`Point ${i} of ${focusStore.maxEnergyPoints}`"
+        >
+          <Icon v-if="i <= focusStore.energyPoints" name="material-symbols:bolt" class="text-[10px]" />
+        </div>
+      </div>
     </div>
 
     <!-- Large SVG Circular Pomodoro Timer with Ambient Glow -->
@@ -99,7 +149,7 @@ const strokeColor = computed(() => {
           {{ focusStore.formattedTime }}
         </div>
         <div class="text-xs sm:text-sm font-semibold px-3 py-1 rounded-full text-on-surface-variant bg-surface-container-high/80 border border-surface-variant/50 inline-block mt-2 shadow-2xs">
-          {{ focusStore.mode === 'work' ? '🧠 Deep Work Session' : '🌿 Resting & Resetting' }}
+          {{ modeLabel }}
         </div>
       </div>
     </div>
@@ -141,6 +191,16 @@ const strokeColor = computed(() => {
         </button>
       </div>
 
+      <!-- Mental Closure Trigger Button -->
+      <button
+        @click="focusStore.openMentalClosure()"
+        class="mt-1 px-5 py-2.5 bg-gradient-to-r from-secondary-container to-primary/10 border border-secondary/30 rounded-full text-secondary font-bold text-xs sm:text-sm hover:border-secondary hover:shadow-md transition-all flex items-center gap-2 active:scale-95"
+        title="Trigger Mental Closure Ritual"
+      >
+        <Icon name="material-symbols:check-circle-outline" class="text-[20px] text-secondary" />
+        <span>Complete Task & Close Mind</span>
+      </button>
+
       <!-- Pop out Document PiP Button (Desktop / Supported Browsers) -->
       <button
         v-if="isSupported"
@@ -165,5 +225,8 @@ const strokeColor = computed(() => {
         <span class="text-xs font-bold text-on-surface">Distraction Dump</span>
       </button>
     </div>
+
+    <!-- Mental Closure Modal Component -->
+    <MentalClosureModal />
   </div>
 </template>

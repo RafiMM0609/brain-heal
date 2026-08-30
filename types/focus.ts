@@ -1,4 +1,5 @@
-export type FocusMode = 'work' | 'shortBreak' | 'longBreak'
+export type FocusMode = 'work' | 'quickWork' | 'shortBreak' | 'longBreak'
+
 
 export interface FocusSession {
   id: string

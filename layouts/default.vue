@@ -6,8 +6,11 @@ import StickyFocusHeader from '~/components/common/StickyFocusHeader.vue'
 import MobileBottomNav from '~/components/common/MobileBottomNav.vue'
 import { useFocusStore } from '~/stores/useFocusStore'
 
+import { useSidebarState } from '~/composables/useSidebarState'
+
 const focusStore = useFocusStore()
 const route = useRoute()
+const { isCollapsed } = useSidebarState()
 
 function handleGlobalKeydown(e: KeyboardEvent) {
   // Shortcut: Alt + D OR Ctrl/Cmd + K
@@ -35,7 +38,10 @@ onUnmounted(() => {
 <template>
   <div class="bg-background text-on-background min-h-screen flex flex-col md:flex-row">
     <AppSidebar />
-    <div class="flex-1 md:ml-64 flex flex-col min-h-screen overflow-hidden relative">
+    <div
+      class="flex-1 flex flex-col min-h-screen overflow-hidden relative transition-all duration-300 ease-in-out"
+      :class="isCollapsed ? 'md:ml-20' : 'md:ml-64'"
+    >
       <!-- Dynamic Island Sticky Top Bar on Mobile -->
       <StickyFocusHeader />
       <AppHeader />

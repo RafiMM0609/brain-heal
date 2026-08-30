@@ -93,6 +93,15 @@ function toggleTimer() {
           <Icon :name="focusStore.isRunning ? 'material-symbols:pause-rounded' : 'material-symbols:play-arrow-rounded'" class="text-[20px]" />
         </button>
 
+        <!-- Complete Task & Close Mind (Mental Closure) Icon Button -->
+        <button
+          @click="focusStore.openMentalClosure()"
+          class="p-1.5 rounded-lg bg-secondary/15 hover:bg-secondary/30 text-secondary transition-colors flex items-center justify-center"
+          title="Complete Task & Close Mind"
+        >
+          <Icon name="material-symbols:check-circle-outline" class="text-[20px]" />
+        </button>
+
         <!-- Stop Timer Icon Button -->
         <button
           @click="focusStore.stopTimer()"

@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/useTaskStore'
+import type { QuadrantType, TaskItem } from '~/types/task'
+import TaskContextMenu from '~/components/ui/TaskContextMenu.vue'
 
 const taskStore = useTaskStore()
 const inputText = ref('')
@@ -7,9 +9,35 @@ const isAnimating = ref(false)
 const copiedTaskId = ref<string | null>(null)
 let copyTimeout: ReturnType<typeof setTimeout> | null = null
 
+const contextMenuShow = ref(false)
+const contextMenuX = ref(0)
+const contextMenuY = ref(0)
+const selectedTask = ref<TaskItem | null>(null)
+
 const emit = defineEmits<{
   (e: 'next'): void
 }>()
+
+function onTaskContextMenu(event: MouseEvent, task: TaskItem) {
+  event.preventDefault()
+  event.stopPropagation()
+  selectedTask.value = task
+  contextMenuX.value = event.clientX
+  contextMenuY.value = event.clientY
+  contextMenuShow.value = true
+}
+
+function handleContextMove(targetQuadrant: QuadrantType) {
+  if (selectedTask.value) {
+    taskStore.moveTask(selectedTask.value.id, targetQuadrant)
+  }
+}
+
+function handleContextDelete() {
+  if (selectedTask.value) {
+    taskStore.deleteTask(selectedTask.value.id)
+  }
+}
 
 async function copyTaskText(text: string, taskId: string) {
   try {
@@ -108,6 +136,7 @@ function removeTask(id: string) {
           v-for="task in taskStore.rawInbox"
           :key="task.id"
           @click="copyTaskText(task.title, task.id)"
+          @contextmenu.prevent="onTaskContextMenu($event, task)"
           :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
           class="bg-surface-container-lowest border border-surface-variant rounded-lg p-4 flex items-start gap-3 hover:border-primary/30 transition-colors soft-shadow group cursor-pointer"
         >
@@ -139,5 +168,17 @@ function removeTask(id: string) {
         <Icon name="material-symbols:arrow-forward" class="group-hover:translate-x-1 transition-transform" />
       </button>
     </div>
+
+    <!-- Right Click Context Menu -->
+    <TaskContextMenu
+      :show="contextMenuShow"
+      :x="contextMenuX"
+      :y="contextMenuY"
+      :task="selectedTask"
+      :allow-focus="false"
+      @close="contextMenuShow = false"
+      @move="handleContextMove"
+      @delete="handleContextDelete"
+    />
   </div>
 </template>

@@ -20,13 +20,13 @@ function goToFocusPage() {
 
 <template>
   <header
-    v-if="focusStore.activeTaskTitle && route.path !== '/execute'"
+    v-if="route.path !== '/execute'"
     class="sticky top-0 left-0 right-0 z-40 bg-surface-bright/95 backdrop-blur-md border-b border-surface-variant px-3.5 py-2.5 pt-safe flex items-center justify-between shadow-sm md:hidden transition-all"
   >
-    <!-- Left Capsule: Active Task Info -->
+    <!-- Left Capsule: Active Task Info (Click to open Focus Page) -->
     <div
       @click="goToFocusPage"
-      class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer active:opacity-80 transition-opacity"
+      class="flex items-center gap-2 flex-1 min-w-0 cursor-pointer active:opacity-80 transition-opacity mr-2"
     >
       <div class="relative shrink-0 flex items-center justify-center w-7 h-7 rounded-full bg-primary/10 text-primary">
         <Icon name="material-symbols:bolt" class="text-[18px]" :class="{ 'animate-bounce': focusStore.isRunning }" />
@@ -40,20 +40,28 @@ function goToFocusPage() {
         <span class="text-[9px] font-bold uppercase tracking-wider text-primary leading-none">
           Focus Anchor
         </span>
-        <h4 class="text-xs font-bold text-on-surface truncate leading-tight">
-          {{ focusStore.activeTaskTitle }}
+        <h4 class="text-xs font-bold text-on-surface truncate leading-tight" :title="focusStore.activeTaskTitle || 'No active task'">
+          {{ focusStore.activeTaskTitle || 'No active task' }}
         </h4>
       </div>
     </div>
 
     <!-- Right Controls: Timer & Play/Pause -->
-    <div class="flex items-center gap-1.5 shrink-0 ml-2">
+    <div class="flex items-center gap-1.5 shrink-0">
       <div
         @click="goToFocusPage"
         class="bg-surface-container-high border border-surface-variant px-2.5 py-1 rounded-full text-xs font-mono font-bold text-primary cursor-pointer flex items-center gap-1"
       >
         <span>{{ focusStore.formattedTime }}</span>
       </div>
+
+      <button
+        @click.stop="focusStore.openMentalClosure()"
+        class="w-8 h-8 rounded-full bg-secondary/15 text-secondary flex items-center justify-center hover:bg-secondary/30 transition-transform active:scale-90 shadow-sm"
+        title="Complete Task & Close Mind"
+      >
+        <Icon name="material-symbols:check-circle-outline" class="text-[18px]" />
+      </button>
 
       <button
         @click.stop="toggleTimer"

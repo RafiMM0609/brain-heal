@@ -31,7 +31,7 @@ export default defineEventHandler(async (event) => {
 
   // Handle Nitro Web Push Notification timer edge cases
   if (session.isRunning && session.targetEndTimestamp && session.targetEndTimestamp > Date.now()) {
-    const isWork = session.mode === 'work'
+    const isWork = session.mode === 'work' || session.mode === 'quickWork'
     const notificationTitle = isWork ? 'Focus Session Completed! 🎯' : 'Break Time Ended! ⚡'
     const notificationBody = isWork
       ? `Great job on "${session.taskTitle || 'Focus Task'}"! Time for a recharge break.`

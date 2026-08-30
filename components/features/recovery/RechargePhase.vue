@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import AppModal from '~/components/ui/AppModal.vue'
+import { useFocusStore } from '~/stores/useFocusStore'
 
+const focusStore = useFocusStore()
 const secondsRemaining = ref(5 * 60) // 5 minutes default
 const isTimerRunning = ref(true)
 let timer: any = null
@@ -18,6 +20,7 @@ const formattedTime = computed(() => {
 })
 
 onMounted(() => {
+  focusStore.resetEnergyPoints()
   startRecoveryTimer()
 })
 
@@ -58,9 +61,11 @@ function openBreathingGuide() {
 }
 
 function endBreakEarly() {
+  focusStore.resetEnergyPoints()
   const router = useRouter()
   router.push('/')
 }
+
 </script>
 
 <template>
