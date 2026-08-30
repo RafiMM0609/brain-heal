@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/useTaskStore'
+import { useToast } from '~/composables/useToast'
 import type { QuadrantType, TaskItem } from '~/types/task'
 
 const taskStore = useTaskStore()
+const { showToast } = useToast()
 const router = useRouter()
 
 // Swipe gesture state
@@ -13,6 +15,28 @@ const currentY = ref(0)
 const isSwiping = ref(false)
 
 const activeTask = computed<TaskItem | undefined>(() => taskStore.rawInbox[0])
+
+async function copyCardText(text: string) {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text)
+    } else {
+      const textArea = document.createElement('textarea')
+      textArea.value = text
+      textArea.style.position = 'fixed'
+      textArea.style.left = '-999999px'
+      textArea.style.top = '-999999px'
+      document.body.appendChild(textArea)
+      textArea.focus()
+      textArea.select()
+      document.execCommand('copy')
+      textArea.remove()
+    }
+    showToast(`Tugas dicopy: ${text}`)
+  } catch (err) {
+    console.error('Failed to copy card text:', err)
+  }
+}
 
 const cardStyle = computed(() => {
   if (!isSwiping.value && currentX.value === 0) {
@@ -149,7 +173,7 @@ function startFocus() {
               <Icon name="material-symbols:drag-pan" class="text-outline text-[20px]" />
             </div>
 
-            <h3 :title="activeTask.title" class="text-xl font-bold text-on-surface leading-snug break-words">
+            <h3 @click.stop="copyCardText(activeTask.title)" class="text-xl font-bold text-on-surface leading-snug break-words cursor-pointer hover:text-primary transition-colors">
               {{ activeTask.title }}
             </h3>
           </div>

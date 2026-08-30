@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/useTaskStore'
+import { useToast } from '~/composables/useToast'
 import type { QuadrantType, TaskItem } from '~/types/task'
 import TaskContextMenu from '~/components/ui/TaskContextMenu.vue'
 
 const taskStore = useTaskStore()
+const { showToast } = useToast()
 const inputText = ref('')
 const isAnimating = ref(false)
 const copiedTaskId = ref<string | null>(null)
@@ -61,8 +63,11 @@ async function copyTaskText(text: string, taskId: string) {
     copyTimeout = setTimeout(() => {
       copiedTaskId.value = null
     }, 1500)
+
+    showToast(`Tugas dicopy: ${text}`)
   } catch (err) {
     console.error('Failed to copy task text:', err)
+    showToast(`Gagal menyalin tugas.`, 'error')
   }
 }
 
@@ -137,10 +142,20 @@ function removeTask(id: string) {
           :key="task.id"
           @click="copyTaskText(task.title, task.id)"
           @contextmenu.prevent="onTaskContextMenu($event, task)"
-          :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
-          class="bg-surface-container-lowest border border-surface-variant rounded-lg p-4 flex items-start gap-3 hover:border-primary/30 transition-colors soft-shadow group cursor-pointer"
+          class="bg-surface-container-lowest border border-surface-variant rounded-lg p-4 flex items-start gap-3 hover:border-primary/30 transition-colors soft-shadow group/task relative cursor-pointer"
         >
-          <div class="w-2.5 h-2.5 rounded-full bg-outline-variant mt-2 group-hover:bg-primary transition-colors shrink-0" />
+          <!-- 0ms Custom Tooltip (Khusus Desktop) -->
+          <div
+            class="hidden md:block absolute left-0 bottom-[calc(100%+6px)] z-50 w-max max-w-xs sm:max-w-sm p-2.5 bg-slate-900/95 dark:bg-slate-800/95 text-slate-100 text-xs rounded-xl shadow-xl border border-slate-700/60 backdrop-blur-md opacity-0 pointer-events-none group-hover/task:opacity-100 transition-opacity duration-0 leading-snug break-words"
+          >
+            <div class="flex items-center gap-1 text-[10px] font-bold tracking-wider uppercase text-primary mb-0.5">
+              <Icon name="material-symbols:info" class="text-[12px]" />
+              <span>Detail Tugas</span>
+            </div>
+            <span>{{ task.title }}</span>
+          </div>
+
+          <div class="w-2.5 h-2.5 rounded-full bg-outline-variant mt-2 group-hover/task:bg-primary transition-colors shrink-0" />
           <p class="text-body-md text-on-surface flex-1 min-w-0 leading-snug flex items-center justify-between gap-2">
             <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
             <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
@@ -149,7 +164,7 @@ function removeTask(id: string) {
           </p>
           <button
             @click.stop="removeTask(task.id)"
-            class="text-outline hover:text-error opacity-0 group-hover:opacity-100 transition-opacity p-1 shrink-0"
+            class="text-outline hover:text-error opacity-0 group-hover/task:opacity-100 transition-opacity p-1 shrink-0"
             title="Delete task"
           >
             <Icon name="material-symbols:close" class="text-[18px]" />
