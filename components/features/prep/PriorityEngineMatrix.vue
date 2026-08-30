@@ -147,7 +147,7 @@ function handleContextComplete() {
 </script>
 
 <template>
-  <div class="flex flex-col h-full max-w-container-max-width mx-auto w-full">
+  <div class="flex flex-col h-full max-w-container-max-width mx-auto w-full min-w-0">
     <!-- Title & Neuroscience Header -->
     <div class="mb-6 flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
       <div>
@@ -156,7 +156,7 @@ function handleContextComplete() {
           Reduce decision fatigue by categorizing tasks. The Eisenhower Matrix bypasses the amygdala's stress response, engaging the prefrontal cortex for deliberate execution.
         </p>
       </div>
-      <div class="flex items-center gap-2 shrink-0">
+      <div class="flex items-center gap-2 shrink-0 flex-wrap">
         <button
           @click="taskStore.resetDefaultTasks()"
           class="px-3 py-1.5 bg-surface-container-high hover:bg-surface-variant text-on-surface rounded-lg text-xs font-semibold transition-colors flex items-center gap-1.5 border border-surface-variant"
@@ -186,10 +186,10 @@ function handleContextComplete() {
     </div>
 
     <!-- Layout Grid: Raw Inbox + 4 Quadrants -->
-    <div class="flex flex-col lg:flex-row gap-6 flex-1 min-h-[600px]">
+    <div class="flex flex-col lg:flex-row gap-6 flex-1 min-h-[600px] min-w-0 w-full">
       <!-- Raw Inbox Column -->
       <div
-        class="w-full lg:w-1/4 bg-surface-bright border border-surface-variant rounded-xl p-4 flex flex-col shadow-sm"
+        class="w-full lg:w-1/4 bg-surface-bright border border-surface-variant rounded-xl p-4 flex flex-col shadow-sm min-w-0"
         :class="{ 'drag-over': activeDragOverQuadrant === 'inbox' }"
         @dragover="onDragOver($event, 'inbox')"
         @dragleave="onDragLeave('inbox')"
@@ -216,9 +216,9 @@ function handleContextComplete() {
               <span
                 @click.stop="copyTaskText(task.title, task.id)"
                 :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
-                class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+                class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover:whitespace-normal group-hover:break-words flex items-center gap-1.5"
               >
-                <span>{{ task.title }}</span>
+                <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                 <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
                   <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
                 </span>
@@ -259,7 +259,7 @@ function handleContextComplete() {
       </div>
 
       <!-- Matrix 2x2 Grid -->
-      <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 relative">
+      <div class="flex-1 grid grid-cols-1 md:grid-cols-2 gap-4 relative min-w-0 w-full">
         <!-- Quadrant 1: Do First -->
         <div
           class="matrix-quadrant bg-surface-bright rounded-xl border border-surface-variant p-4 flex flex-col relative overflow-hidden shadow-sm"
@@ -300,9 +300,9 @@ function handleContextComplete() {
                 <span
                   @click.stop="copyTaskText(task.title, task.id)"
                   :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
-                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover:whitespace-normal group-hover:break-words flex items-center gap-1.5"
                 >
-                  <span>{{ task.title }}</span>
+                  <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                   <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
                     <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
                   </span>
@@ -332,7 +332,7 @@ function handleContextComplete() {
 
         <!-- Quadrant 2: Schedule -->
         <div
-          class="matrix-quadrant bg-surface-bright rounded-xl border border-surface-variant p-4 flex flex-col relative overflow-hidden shadow-sm"
+          class="matrix-quadrant bg-surface-bright rounded-xl border border-surface-variant p-4 flex flex-col relative overflow-hidden shadow-sm min-w-0"
           :class="{ 'drag-over': activeDragOverQuadrant === 'schedule' }"
           @dragover="onDragOver($event, 'schedule')"
           @dragleave="onDragLeave('schedule')"
@@ -370,9 +370,9 @@ function handleContextComplete() {
                 <span
                   @click.stop="copyTaskText(task.title, task.id)"
                   :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
-                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+                  class="text-body-md text-on-surface font-medium cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover:whitespace-normal group-hover:break-words flex items-center gap-1.5"
                 >
-                  <span>{{ task.title }}</span>
+                  <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                   <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
                     <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
                   </span>
@@ -402,7 +402,7 @@ function handleContextComplete() {
 
         <!-- Quadrant 3: Delegate -->
         <div
-          class="matrix-quadrant bg-surface-bright rounded-xl border border-surface-variant p-4 flex flex-col relative overflow-hidden shadow-sm"
+          class="matrix-quadrant bg-surface-bright rounded-xl border border-surface-variant p-4 flex flex-col relative overflow-hidden shadow-sm min-w-0"
           :class="{ 'drag-over': activeDragOverQuadrant === 'delegate' }"
           @dragover="onDragOver($event, 'delegate')"
           @dragleave="onDragLeave('delegate')"
@@ -440,9 +440,9 @@ function handleContextComplete() {
                 <span
                   @click.stop="copyTaskText(task.title, task.id)"
                   :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
-                  class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+                  class="text-body-md text-on-surface cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover:whitespace-normal group-hover:break-words flex items-center gap-1.5"
                 >
-                  <span>{{ task.title }}</span>
+                  <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                   <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
                     <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
                   </span>
@@ -464,7 +464,7 @@ function handleContextComplete() {
 
         <!-- Quadrant 4: Eliminate -->
         <div
-          class="matrix-quadrant bg-surface-bright rounded-xl border border-surface-variant p-4 flex flex-col relative overflow-hidden shadow-sm"
+          class="matrix-quadrant bg-surface-bright rounded-xl border border-surface-variant p-4 flex flex-col relative overflow-hidden shadow-sm min-w-0"
           :class="{ 'drag-over': activeDragOverQuadrant === 'eliminate' }"
           @dragover="onDragOver($event, 'eliminate')"
           @dragleave="onDragLeave('eliminate')"
@@ -502,9 +502,9 @@ function handleContextComplete() {
                 <span
                   @click.stop="copyTaskText(task.title, task.id)"
                   :title="copiedTaskId === task.id ? 'Copied to clipboard!' : task.title"
-                  class="text-body-md text-on-surface line-through text-outline cursor-pointer select-text transition-all duration-150 flex-1 truncate group-hover:whitespace-normal group-hover:break-words inline-flex items-center gap-1.5"
+                  class="text-body-md text-on-surface line-through text-outline cursor-pointer select-text transition-all duration-150 flex-1 min-w-0 group-hover:whitespace-normal group-hover:break-words flex items-center gap-1.5"
                 >
-                  <span>{{ task.title }}</span>
+                  <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
                   <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0 not-italic no-underline">
                     <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
                   </span>

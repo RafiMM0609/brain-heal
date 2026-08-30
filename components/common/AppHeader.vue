@@ -1,20 +1,11 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/useAuthStore'
-import { useFocusStore } from '~/stores/useFocusStore'
 import { useDocumentPiP } from '~/composables/useDocumentPiP'
 
 const authStore = useAuthStore()
-const focusStore = useFocusStore()
 const router = useRouter()
 const { pipWindow, isSupported, togglePiP } = useDocumentPiP()
 const { requestNotificationPermission } = useAudioNotification()
-const searchQuery = ref('')
-
-function handleSearch() {
-  if (searchQuery.value.trim()) {
-    router.push({ path: '/', query: { search: searchQuery.value.trim() } })
-  }
-}
 
 const isProfileMenuOpen = ref(false)
 const profileMenuRef = ref<HTMLElement | null>(null)
@@ -52,18 +43,6 @@ onUnmounted(() => {
   <header class="bg-surface/95 backdrop-blur-md shadow-xs flex justify-between items-center w-full px-4 py-3 pt-safe md:px-8 md:py-4 sticky top-0 z-30 border-b border-surface-variant">
     <div class="flex items-center gap-4">
       <span class="text-headline-md font-bold text-primary block md:hidden">NeuralFlow</span>
-      
-      <!-- Search Input -->
-      <div class="relative hidden sm:block">
-        <Icon name="material-symbols:search" class="absolute left-3 top-1/2 -translate-y-1/2 text-outline text-[20px]" />
-        <input
-          v-model="searchQuery"
-          @keydown.enter="handleSearch"
-          type="text"
-          placeholder="Search tasks..."
-          class="pl-10 pr-4 py-2 bg-surface-container-low border-none rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright w-64 transition-all"
-        />
-      </div>
     </div>
 
     <nav class="hidden md:flex gap-6 items-center">
@@ -85,17 +64,6 @@ onUnmounted(() => {
         <span>{{ pipWindow ? 'Close PiP Anchor' : 'PiP Focus Anchor' }}</span>
       </button>
 
-      <!-- Distraction Dump Trigger -->
-      <button
-        @click="focusStore.toggleDistractionDump()"
-        class="flex items-center gap-2 px-3 py-1.5 border border-outline rounded-lg text-primary font-label-md hover:bg-surface-container-low transition-colors duration-200"
-        title="Instant Distraction Dump (Shortcut: Alt + D or Ctrl + K)"
-      >
-        <Icon name="material-symbols:add-circle" class="text-[18px]" />
-        <span class="hidden sm:inline">Distraction Dump</span>
-        <span class="text-[10px] font-mono px-1.5 py-0.5 bg-surface-container-high text-outline rounded border border-surface-variant">Alt+D</span>
-      </button>
-
       <button
         @click="requestNotificationPermission"
         aria-label="Notifications"
@@ -103,15 +71,6 @@ onUnmounted(() => {
         class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center"
       >
         <Icon name="material-symbols:notifications" class="text-[24px]" />
-      </button>
-
-      <button
-        @click="focusStore.toggleDistractionDump"
-        aria-label="Settings"
-        title="Open Distraction Dump Settings"
-        class="p-2 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center"
-      >
-        <Icon name="material-symbols:settings" class="text-[24px]" />
       </button>
 
       <!-- User Profile Avatar & Badge / Name Dropdown Trigger -->

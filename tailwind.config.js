@@ -56,6 +56,9 @@ module.exports = {
         'on-error': '#ffffff',
         'on-error-container': '#93000a'
       },
+      maxWidth: {
+        'container-max-width': '1200px'
+      },
       borderRadius: {
         DEFAULT: '0.25rem',
         lg: '0.5rem',

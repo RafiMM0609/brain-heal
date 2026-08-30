@@ -30,7 +30,7 @@ function toggleTimer() {
 <template>
   <aside
     aria-label="Floating Focus Anchor"
-    class="fixed bottom-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 w-11/12 max-w-2xl px-2"
+    class="fixed bottom-[calc(4.5rem+env(safe-area-inset-bottom,0px))] md:bottom-4 left-1/2 -translate-x-1/2 z-40 transition-all duration-300 w-11/12 max-w-2xl px-2"
   >
     <!-- Minimized Pill View -->
     <div

@@ -141,8 +141,8 @@ function removeTask(id: string) {
           class="bg-surface-container-lowest border border-surface-variant rounded-lg p-4 flex items-start gap-3 hover:border-primary/30 transition-colors soft-shadow group cursor-pointer"
         >
           <div class="w-2.5 h-2.5 rounded-full bg-outline-variant mt-2 group-hover:bg-primary transition-colors shrink-0" />
-          <p class="text-body-md text-on-surface flex-1 leading-snug flex items-center justify-between gap-2">
-            <span>{{ task.title }}</span>
+          <p class="text-body-md text-on-surface flex-1 min-w-0 leading-snug flex items-center justify-between gap-2">
+            <span class="truncate min-w-0 flex-1">{{ task.title }}</span>
             <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0">
               <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
             </span>
