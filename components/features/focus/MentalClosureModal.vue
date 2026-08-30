@@ -8,7 +8,6 @@ const taskStore = useTaskStore()
 const router = useRouter()
 
 const offloadNote = ref('')
-const selectedEnergyState = ref<'high' | 'balanced' | 'drained'>('balanced')
 const isSubmitting = ref(false)
 
 // Select Task modal inside closure flow
@@ -19,7 +18,6 @@ const sessionMinutes = computed(() => focusStore.closureTaskData?.sessionMinutes
 
 function resetForm() {
   offloadNote.value = ''
-  selectedEnergyState.value = 'balanced'
   showNextTaskSelector.value = false
   isSubmitting.value = false
 }
@@ -88,49 +86,39 @@ function selectNextTask(id: string, title: string) {
         </div>
       </template>
 
-      <div class="space-y-6 text-on-surface">
-        <!-- Step 1: Dopamine Burst & Victory Banner -->
-        <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary/10 via-secondary/10 to-transparent p-5 border border-primary/20 text-center">
-          <!-- Background Ambient Glow -->
-          <div class="absolute -top-10 -right-10 w-32 h-32 bg-primary/20 rounded-full blur-2xl pointer-events-none" />
-
-          <!-- Animated Badge -->
-          <div class="relative z-10 mx-auto w-16 h-16 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-lg mb-3 animate-bounce">
-            <Icon name="material-symbols:check-circle" class="text-[36px]" />
+      <div class="space-y-5 text-on-surface">
+        <!-- Compact Victory Banner -->
+        <div class="rounded-xl bg-gradient-to-r from-primary/10 via-secondary/10 to-transparent p-3.5 border border-primary/20 flex items-center gap-3">
+          <div class="w-10 h-10 rounded-full bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-sm">
+            <Icon name="material-symbols:check-circle" class="text-[24px]" />
           </div>
-
-          <h3 class="text-xl sm:text-2xl font-extrabold text-on-surface leading-tight mb-1">
-            Task Finished & Sealed! 🎉
-          </h3>
-          <p class="text-sm font-semibold text-primary max-w-sm mx-auto line-clamp-2">
-            "{{ taskTitle }}"
-          </p>
-
-          <div class="mt-4 inline-flex items-center gap-3 px-3.5 py-1.5 bg-surface-bright/90 backdrop-blur-md border border-surface-variant rounded-full text-xs font-bold text-on-surface shadow-xs">
-            <span class="flex items-center gap-1 text-primary">
-              <Icon name="material-symbols:timer" class="text-[16px]" />
-              {{ sessionMinutes }}m Focused
-            </span>
-            <span class="text-outline/40">•</span>
-            <span class="flex items-center gap-1 text-secondary">
-              <Icon name="material-symbols:bolt" class="text-[16px]" />
-              +2 Battery Pts
-            </span>
+          <div class="min-w-0 flex-1">
+            <div class="flex items-center gap-2">
+              <h3 class="text-base font-extrabold text-on-surface leading-tight">
+                Task Finished & Sealed! 🎉
+              </h3>
+              <span class="px-2 py-0.5 bg-surface-bright border border-surface-variant rounded-full text-[10px] font-bold text-primary shrink-0">
+                {{ sessionMinutes }}m Focus
+              </span>
+            </div>
+            <p class="text-xs font-semibold text-primary truncate mt-0.5">
+              "{{ taskTitle }}"
+            </p>
           </div>
         </div>
 
-        <!-- Step 2: Zeigarnik Effect Offloading (Micro Brain Dump) -->
+        <!-- 1. Memory Offload Section -->
         <div class="bg-surface-container-low rounded-xl p-4 border border-surface-variant space-y-2">
           <div class="flex items-center justify-between">
             <label for="closure-offload-note" class="text-xs font-bold text-on-surface flex items-center gap-1.5">
               <Icon name="material-symbols:cloud-upload" class="text-[16px] text-primary" />
-              <span>Working Memory Offload (Optional)</span>
+              <span>Working Memory Offload</span>
             </label>
             <span class="text-[10px] text-outline font-medium">Zeigarnik Shield</span>
           </div>
 
-          <p class="text-xs text-on-surface-variant leading-relaxed">
-            Record any leftover thoughts, next actions, or key takeaways before your prefrontal cortex fully releases this task context.
+          <p class="text-[11px] text-on-surface-variant leading-relaxed">
+            Offload any leftover thoughts or next steps directly into Inbox to clear your mind.
           </p>
 
           <textarea
@@ -142,57 +130,17 @@ function selectNextTask(id: string, title: string) {
           />
         </div>
 
-        <!-- Step 3: Subjective Cognitive Energy Check-in -->
-        <div class="space-y-2">
-          <label class="text-xs font-bold text-on-surface flex items-center gap-1.5">
-            <Icon name="material-symbols:battery-charging-90" class="text-[16px] text-secondary" />
-            <span>How does your brain feel right now?</span>
-          </label>
-
-          <div class="grid grid-cols-3 gap-2">
-            <button
-              type="button"
-              @click="selectedEnergyState = 'high'"
-              class="p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer"
-              :class="selectedEnergyState === 'high' ? 'bg-primary/10 border-primary text-primary font-bold shadow-xs' : 'bg-surface border-surface-variant text-on-surface-variant hover:bg-surface-container-low'"
-            >
-              <span class="text-lg">⚡</span>
-              <span class="text-[11px]">High Energy</span>
-            </button>
-
-            <button
-              type="button"
-              @click="selectedEnergyState = 'balanced'"
-              class="p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer"
-              :class="selectedEnergyState === 'balanced' ? 'bg-secondary/10 border-secondary text-secondary font-bold shadow-xs' : 'bg-surface border-surface-variant text-on-surface-variant hover:bg-surface-container-low'"
-            >
-              <span class="text-lg">🌿</span>
-              <span class="text-[11px]">Balanced</span>
-            </button>
-
-            <button
-              type="button"
-              @click="selectedEnergyState = 'drained'"
-              class="p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer"
-              :class="selectedEnergyState === 'drained' ? 'bg-error/10 border-error text-error font-bold shadow-xs' : 'bg-surface border-surface-variant text-on-surface-variant hover:bg-surface-container-low'"
-            >
-              <span class="text-lg">🪫</span>
-              <span class="text-[11px]">Drained</span>
-            </button>
-          </div>
-        </div>
-
-        <!-- Step 4: Mindful Next Step Decision Actions -->
-        <div class="pt-2 space-y-2">
+        <!-- 2. Next Action Options -->
+        <div class="space-y-2.5">
           <p class="text-[11px] font-extrabold uppercase tracking-wider text-outline text-center">
-            Choose Your Mindful Transition
+            What's Your Next Step?
           </p>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
             <button
               @click="finalizeClosure('nextTask')"
               :disabled="isSubmitting"
-              class="w-full py-3 px-4 bg-primary text-on-primary font-bold rounded-xl shadow-md hover:bg-primary-container transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-98"
+              class="w-full py-3 px-4 bg-primary text-on-primary font-bold rounded-xl shadow-md hover:bg-primary-container transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-98 cursor-pointer"
             >
               <Icon name="material-symbols:bolt" class="text-[18px]" />
               <span>Anchor Next Task</span>
@@ -201,10 +149,10 @@ function selectNextTask(id: string, title: string) {
             <button
               @click="finalizeClosure('break')"
               :disabled="isSubmitting"
-              class="w-full py-3 px-4 bg-secondary text-on-secondary font-bold rounded-xl shadow-md hover:opacity-90 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-98"
+              class="w-full py-3 px-4 bg-secondary text-on-secondary font-bold rounded-xl shadow-md hover:opacity-90 transition-all flex items-center justify-center gap-2 text-xs sm:text-sm active:scale-98 cursor-pointer"
             >
               <Icon name="material-symbols:local-cafe" class="text-[18px]" />
-              <span>Take a Break (5m)</span>
+              <span>Take 5m Break</span>
             </button>
           </div>
 
@@ -212,9 +160,10 @@ function selectNextTask(id: string, title: string) {
             <button
               @click="finalizeClosure('matrix')"
               :disabled="isSubmitting"
-              class="text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors py-1 px-2"
+              class="text-xs font-semibold text-on-surface-variant hover:text-primary transition-colors py-1 px-2.5 rounded-lg hover:bg-surface-container-low cursor-pointer flex items-center gap-1"
             >
-              Return to Priority Matrix
+              <Icon name="material-symbols:grid-view" class="text-[14px]" />
+              <span>Priority Matrix</span>
             </button>
 
             <span class="text-outline/30">•</span>
@@ -222,9 +171,10 @@ function selectNextTask(id: string, title: string) {
             <button
               @click="finalizeClosure('done')"
               :disabled="isSubmitting"
-              class="text-xs font-semibold text-outline hover:text-on-surface transition-colors py-1 px-2"
+              class="text-xs font-semibold text-outline hover:text-on-surface transition-colors py-1 px-2.5 rounded-lg hover:bg-surface-container-low cursor-pointer flex items-center gap-1"
             >
-              Just Close Modal
+              <Icon name="material-symbols:check" class="text-[14px]" />
+              <span>Just Finish Task</span>
             </button>
           </div>
         </div>
