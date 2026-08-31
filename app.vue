@@ -7,45 +7,30 @@ import MobilePrioritySwipeModal from '~/components/features/prep/MobilePriorityS
 const focusStore = useFocusStore()
 useRealtimeSync()
 
-function updateTabTitle() {
-  if (import.meta.server || typeof document === 'undefined') return
-
+const tabTitle = computed(() => {
   const taskTitle = focusStore.activeTaskTitle || 'NeuralFlow'
 
   if (focusStore.mode === 'work') {
     if (focusStore.isRunning) {
-      document.title = `⏳ ${focusStore.formattedTime} - ${taskTitle}`
+      return `⏳ ${focusStore.formattedTime} - ${taskTitle}`
     } else if (focusStore.elapsedSeconds > 0) {
-      document.title = `⏸️ ${focusStore.formattedTime} - ${taskTitle}`
+      return `⏸️ ${focusStore.formattedTime} - ${taskTitle}`
     } else {
-      document.title = `🎯 ${taskTitle} - NeuralFlow`
+      return `🎯 ${taskTitle} - NeuralFlow`
     }
   } else if (focusStore.mode === 'shortBreak' || focusStore.mode === 'longBreak') {
     if (focusStore.isRunning) {
-      document.title = `☕ ${focusStore.formattedTime} - Break Time`
+      return `☕ ${focusStore.formattedTime} - Break Time`
     } else {
-      document.title = `☕ Break Time - NeuralFlow`
+      return `☕ Break Time - NeuralFlow`
     }
-  } else {
-    document.title = 'NeuralFlow - Healing Brain'
   }
-}
 
-watch(
-  [
-    () => focusStore.formattedTime,
-    () => focusStore.isRunning,
-    () => focusStore.mode,
-    () => focusStore.activeTaskTitle
-  ],
-  () => {
-    updateTabTitle()
-  },
-  { immediate: true }
-)
+  return 'NeuralFlow - Healing Brain'
+})
 
-onMounted(() => {
-  updateTabTitle()
+useHead({
+  title: tabTitle
 })
 </script>
 
