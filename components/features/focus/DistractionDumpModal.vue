@@ -19,6 +19,13 @@ function triggerHaptic() {
   }
 }
 
+function handleInputFocus(e: FocusEvent) {
+  const target = e.target as HTMLElement | null
+  setTimeout(() => {
+    target?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+  }, 150)
+}
+
 watch(
   () => focusStore.isDistractionDumpOpen,
   (isOpen) => {
@@ -27,12 +34,17 @@ watch(
         const el = inputRef.value || (document.getElementById('instant-dump-input') as HTMLInputElement | null)
         if (el) {
           el.focus()
+          try {
+            el.scrollIntoView({ block: 'center', behavior: 'smooth' })
+          } catch {
+            // Ignore if scrollIntoView is unsupported
+          }
         }
       }
       doFocus()
       nextTick(doFocus)
       requestAnimationFrame(doFocus)
-      setTimeout(doFocus, 50)
+      setTimeout(doFocus, 100)
     } else {
       distractionText.value = ''
       justSaved.value = false
@@ -78,7 +90,7 @@ function handleSave() {
         </span>
       </div>
 
-      <div class="relative">
+      <div class="relative my-1">
         <form @submit.prevent="handleSave" class="flex gap-2">
           <input
             id="instant-dump-input"
@@ -88,9 +100,10 @@ function handleSave() {
             autofocus
             enterkeyhint="send"
             autocomplete="off"
+            @focus="handleInputFocus"
             @keydown="handleKeydown"
             placeholder="Type intrusive thought & press Enter..."
-            class="flex-1 px-4 py-3.5 bg-surface-container-low border border-surface-variant rounded-xl text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none transition-all shadow-inner"
+            class="flex-1 px-4 py-3.5 bg-surface-container-low border border-surface-variant rounded-xl text-base text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright outline-none transition-all shadow-inner"
           />
           <button
             type="submit"
