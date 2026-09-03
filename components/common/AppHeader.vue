@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/useAuthStore'
 import { useDocumentPiP } from '~/composables/useDocumentPiP'
+import MobileDrawerMenu from '~/components/common/MobileDrawerMenu.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -9,6 +10,7 @@ const { pipWindow, isSupported, togglePiP } = useDocumentPiP()
 const { requestNotificationPermission } = useAudioNotification()
 
 const isProfileMenuOpen = ref(false)
+const isMobileDrawerOpen = ref(false)
 const profileMenuRef = ref<HTMLElement | null>(null)
 
 function toggleProfileMenu() {
@@ -42,11 +44,20 @@ onUnmounted(() => {
 
 <template>
   <header
-    class="bg-surface/95 backdrop-blur-md shadow-xs flex justify-between items-center w-full px-4 py-1 md:px-6 h-12 border-b border-surface-variant transition-all"
+    class="bg-surface/95 backdrop-blur-md shadow-xs flex justify-between items-center w-full px-3 sm:px-4 py-2 md:px-6 min-h-12 h-auto border-b border-surface-variant transition-all"
     :class="route.path === '/execute' ? 'pt-safe' : 'md:pt-safe'"
   >
-    <div class="flex items-center gap-4">
-      <span class="text-title-md font-bold text-primary block md:hidden">NeuralFlow</span>
+    <div class="flex items-center gap-2.5">
+      <!-- Burger Icon Trigger for Mobile View & PWA -->
+      <button
+        @click="isMobileDrawerOpen = true"
+        class="p-1.5 text-on-surface hover:text-primary hover:bg-surface-container-high rounded-xl transition-all active:scale-95 md:hidden flex items-center justify-center border border-surface-variant/60"
+        title="Open Option Menu"
+        aria-label="Open Option Menu"
+      >
+        <Icon name="material-symbols:menu" class="text-[22px]" />
+      </button>
+      <span class="text-title-md font-bold text-primary block md:hidden truncate">NeuralFlow</span>
     </div>
 
     <nav class="hidden md:flex gap-6 items-center">
@@ -55,7 +66,7 @@ onUnmounted(() => {
       </NuxtLink>
     </nav>
 
-    <div class="flex items-center gap-2">
+    <div class="flex items-center gap-1.5 sm:gap-2">
       <!-- Document Picture-in-Picture Focus Anchor Trigger -->
       <button
         v-if="isSupported"
@@ -100,6 +111,13 @@ onUnmounted(() => {
           <Icon name="material-symbols:keyboard-arrow-down" class="text-[18px] text-on-surface-variant transition-transform duration-200" :class="{ 'rotate-180': isProfileMenuOpen }" />
         </button>
 
+        <!-- Backdrop overlay for mobile screen click-outside -->
+        <div
+          v-if="isProfileMenuOpen"
+          @click="closeProfileMenu"
+          class="fixed inset-0 z-40 md:hidden bg-black/10 backdrop-blur-[1px]"
+        />
+
         <!-- Profile Dropdown Menu -->
         <Transition
           enter-active-class="transition duration-150 ease-out"
@@ -111,7 +129,7 @@ onUnmounted(() => {
         >
           <div
             v-if="isProfileMenuOpen"
-            class="absolute right-0 top-full mt-2 w-72 bg-surface-bright/95 backdrop-blur-md rounded-2xl border border-surface-variant shadow-2xl z-50 p-4 overflow-hidden"
+            class="absolute right-0 top-full mt-2 w-72 max-w-[calc(100vw-1.5rem)] bg-surface-bright/95 backdrop-blur-xl rounded-2xl border border-surface-variant shadow-2xl z-50 p-4 overflow-hidden"
           >
             <!-- User Info Header -->
             <div class="flex items-center gap-3 pb-3 border-b border-surface-variant">
@@ -149,6 +167,13 @@ onUnmounted(() => {
         </Transition>
       </div>
     </div>
+
+    <!-- Mobile Navigation Drawer -->
+    <MobileDrawerMenu
+      :is-open="isMobileDrawerOpen"
+      @close="isMobileDrawerOpen = false"
+    />
   </header>
 </template>
+
 
