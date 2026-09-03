@@ -1,8 +1,5 @@
 <script setup lang="ts">
-import MobileDrawerMenu from '~/components/common/MobileDrawerMenu.vue'
-
 const route = useRoute()
-const isMobileDrawerOpen = ref(false)
 </script>
 
 <template>
@@ -45,23 +42,6 @@ const isMobileDrawerOpen = ref(false)
       <Icon name="material-symbols:content-paste-go" class="text-[20px]" />
       <span class="text-[10px] font-medium tracking-tight">Share</span>
     </NuxtLink>
-
-    <!-- Option Menu Drawer Button -->
-    <button
-      @click="isMobileDrawerOpen = true"
-      class="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-2xl transition-all active:scale-95 text-on-surface-variant hover:text-primary"
-      :class="{ 'text-primary font-bold bg-primary/10': isMobileDrawerOpen }"
-      title="Open Menu Options"
-      aria-label="Open Menu Options"
-    >
-      <Icon name="material-symbols:menu" class="text-[20px]" />
-      <span class="text-[10px] font-medium tracking-tight">Menu</span>
-    </button>
-
-    <MobileDrawerMenu
-      :is-open="isMobileDrawerOpen"
-      @close="isMobileDrawerOpen = false"
-    />
   </nav>
 </template>
 
