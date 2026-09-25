@@ -1,12 +1,17 @@
+import type webPush from 'web-push'
 import { REDIS_KEYS, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
 import { syncBus } from '~/server/utils/bus'
 import { schedulePushTimer, cancelPushTimer, storePushSubscription } from '~/server/utils/pushScheduler'
 import type { FocusSession } from '~/types/focus'
 
+interface FocusSessionRequestBody extends Partial<FocusSession> {
+  pushSubscription?: webPush.PushSubscription | null
+}
+
 export default defineEventHandler(async (event) => {
   const userIdentifier = getAuthUserIdentifier(event)
   const key = getUserRedisKey(userIdentifier, REDIS_KEYS.FOCUS_SESSION)
-  const body = await readBody<Partial<FocusSession> & { pushSubscription?: any }>(event)
+  const body = (await readBody<FocusSessionRequestBody>(event)) || {}
 
   const session: FocusSession = {
     id: body.id || 'focus-session-main',
@@ -47,7 +52,7 @@ export default defineEventHandler(async (event) => {
         icon: '/favicon.svg',
         url: targetUrl
       },
-      body.pushSubscription
+      body.pushSubscription || undefined
     )
   } else {
     // If timer is paused, stopped, skipped, or completed -> Cancel push notification timer immediately!

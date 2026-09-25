@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import type { ShareItem } from '~/server/api/share/index.get'
+import type { ShareItem } from '~/types/share'
 
 export async function compressImageFile(
   file: File,

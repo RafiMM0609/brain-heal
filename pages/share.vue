@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useShareStore } from '~/stores/useShareStore'
-import type { ShareItem } from '~/server/api/share/index.get'
+import { copyTextToClipboard, copyImageToClipboard, downloadMedia } from '~/utils/clipboard'
+import { getErrorMessage } from '~/utils/error'
+import type { ShareItem } from '~/types/share'
 
 const shareStore = useShareStore()
 const textInput = ref('')
@@ -63,7 +65,7 @@ async function submitText() {
   try {
     await shareStore.addTextItem(val)
     showToast('Teks berhasil dibagikan!')
-  } catch (err) {
+  } catch {
     showToast('Gagal membagikan teks.')
     textInput.value = val
   }
@@ -74,8 +76,8 @@ async function handleImageUpload(file: File) {
   try {
     await shareStore.addImageFile(file)
     showToast('Gambar berhasil dikompres & dibagikan!')
-  } catch (err: any) {
-    showToast(err?.message || 'Gagal membagikan gambar.')
+  } catch (err: unknown) {
+    showToast(getErrorMessage(err, 'Gagal membagikan gambar.'))
   }
 }
 
@@ -94,86 +96,38 @@ function onDropFile(e: DragEvent) {
   }
 }
 
-async function copyTextToClipboard(item: ShareItem) {
-  try {
-    const nav = typeof navigator !== 'undefined' ? (navigator as any) : null
-    if (nav?.clipboard?.writeText) {
-      await nav.clipboard.writeText(item.content)
-    } else {
-      const textarea = document.createElement('textarea')
-      textarea.value = item.content
-      document.body.appendChild(textarea)
-      textarea.select()
-      document.execCommand('copy')
-      document.body.removeChild(textarea)
-    }
+async function copyTextHandler(item: ShareItem) {
+  const success = await copyTextToClipboard(item.content)
+  if (success) {
     copiedItemId.value = item.id
     showToast('Teks disalin ke clipboard!')
     setTimeout(() => {
       if (copiedItemId.value === item.id) copiedItemId.value = null
     }, 2000)
-  } catch (err) {
+  } else {
     showToast('Gagal menyalin teks.')
   }
 }
 
-async function copyImageToClipboard(item: ShareItem) {
-  try {
-    copiedItemId.value = item.id
-    const res = await fetch(item.content)
-    const blob = await res.blob()
-
-    let pngBlob = blob
-    if (blob.type !== 'image/png') {
-      const img = new Image()
-      img.src = item.content
-      await new Promise((resolve) => (img.onload = resolve))
-      const canvas = document.createElement('canvas')
-      canvas.width = img.width
-      canvas.height = img.height
-      const ctx = canvas.getContext('2d')
-      ctx?.drawImage(img, 0, 0)
-      pngBlob = await new Promise<Blob>((resolve) =>
-        canvas.toBlob((b) => resolve(b || blob), 'image/png')
-      )
-    }
-
-    const nav = typeof navigator !== 'undefined' ? (navigator as any) : null
-    if (nav?.clipboard && typeof nav.clipboard.write === 'function') {
-      await nav.clipboard.write([
-        new ClipboardItem({
-          [pngBlob.type]: pngBlob
-        })
-      ])
+async function copyImageHandler(item: ShareItem) {
+  copiedItemId.value = item.id
+  const result = await copyImageToClipboard(item.content)
+  if (result.success) {
+    if (result.mode === 'blob') {
       showToast('Gambar disalin ke clipboard! Tinggal paste.')
-    } else if (nav?.clipboard && typeof nav.clipboard.writeText === 'function') {
-      await nav.clipboard.writeText(item.content)
-      showToast('Base64 disalin ke clipboard!')
     } else {
-      showToast('Clipboard API tidak didukung di browser ini.')
+      showToast('Base64 disalin ke clipboard!')
     }
-  } catch (err) {
-    console.error('Error copying image:', err)
-    try {
-      await (navigator as any).clipboard?.writeText(item.content)
-      showToast('Base64 gambar disalin ke clipboard!')
-    } catch {
-      showToast('Gagal menyalin gambar.')
-    }
-  } finally {
-    setTimeout(() => {
-      if (copiedItemId.value === item.id) copiedItemId.value = null
-    }, 2000)
+  } else {
+    showToast('Gagal menyalin gambar.')
   }
+  setTimeout(() => {
+    if (copiedItemId.value === item.id) copiedItemId.value = null
+  }, 2000)
 }
 
-function downloadImage(item: ShareItem) {
-  const link = document.createElement('a')
-  link.href = item.content
-  link.download = item.fileName || `shared-image-${Date.now()}.jpg`
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
+function downloadImageHandler(item: ShareItem) {
+  downloadMedia(item.content, item.fileName || `shared-image-${Date.now()}.jpg`)
   showToast('Gambar di-download!')
 }
 
@@ -396,7 +350,7 @@ function formatTimeAgo(isoString: string): string {
             </div>
             <div class="flex justify-end">
               <button
-                @click="copyTextToClipboard(item)"
+                @click="copyTextHandler(item)"
                 class="px-3 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-xs"
                 :class="
                   copiedItemId === item.id
@@ -440,7 +394,7 @@ function formatTimeAgo(isoString: string): string {
 
               <div class="flex items-center gap-2">
                 <button
-                  @click="downloadImage(item)"
+                  @click="downloadImageHandler(item)"
                   class="px-3 py-1.5 bg-surface-container-high hover:bg-surface-container-highest text-on-surface border border-outline-variant rounded-xl text-xs font-semibold transition-all flex items-center gap-1"
                   title="Download File"
                 >
@@ -449,7 +403,7 @@ function formatTimeAgo(isoString: string): string {
                 </button>
 
                 <button
-                  @click="copyImageToClipboard(item)"
+                  @click="copyImageHandler(item)"
                   class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all flex items-center gap-1.5 shadow-sm"
                   :class="
                     copiedItemId === item.id

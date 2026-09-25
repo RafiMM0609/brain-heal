@@ -165,26 +165,6 @@ function selectQuadrant(quadrant: QuadrantType) {
   emit('move', quadrant)
   emit('close')
 }
-
-function triggerFocus() {
-  emit('focus')
-  emit('close')
-}
-
-function triggerDetail() {
-  emit('detail')
-  emit('close')
-}
-
-function triggerComplete() {
-  emit('complete')
-  emit('close')
-}
-
-function triggerDelete() {
-  emit('delete')
-  emit('close')
-}
 </script>
 
 <template>

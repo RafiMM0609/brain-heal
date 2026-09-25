@@ -2,10 +2,10 @@ import { useAuthStore } from '~/stores/useAuthStore'
 
 export function getClientId(): string {
   if (!import.meta.client || typeof window === 'undefined') return 'server'
-  if (!(window as any).__NUXT_CLIENT_ID__) {
-    ;(window as any).__NUXT_CLIENT_ID__ = 'client-' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
+  if (!window.__NUXT_CLIENT_ID__) {
+    window.__NUXT_CLIENT_ID__ = 'client-' + Math.random().toString(36).substring(2, 10) + Date.now().toString(36)
   }
-  return (window as any).__NUXT_CLIENT_ID__
+  return window.__NUXT_CLIENT_ID__
 }
 
 export function useApi() {
@@ -24,7 +24,7 @@ export function useApi() {
           headers['x-user-id'] = authStore.user.id
         }
       }
-    } catch (err) {
+    } catch {
       // Pinia store might not be ready yet
     }
     return headers

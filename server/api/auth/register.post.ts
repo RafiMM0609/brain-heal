@@ -1,7 +1,14 @@
-import { REDIS_KEYS, redisGet, redisSet } from '~/server/utils/redis'
+import { REDIS_KEYS, redisGet, redisSet, DEFAULT_USERS } from '~/server/utils/redis'
+import type { UserAccount } from '~/types/user'
+
+interface RegisterRequestBody {
+  name?: string
+  email?: string
+  password?: string
+}
 
 export default defineEventHandler(async (event) => {
-  const body = await readBody(event)
+  const body = await readBody<RegisterRequestBody>(event)
   const { name, email, password } = body || {}
 
   if (!name || typeof name !== 'string' || !name.trim()) {
@@ -29,8 +36,8 @@ export default defineEventHandler(async (event) => {
   const cleanName = name.trim()
 
   // Fetch current registered users list from Redis
-  const { data: rawUsers } = await redisGet<any[]>(REDIS_KEYS.USERS)
-  const users = Array.isArray(rawUsers) ? rawUsers : []
+  const { data: rawUsers } = await redisGet<UserAccount[]>(REDIS_KEYS.USERS)
+  const users: UserAccount[] = Array.isArray(rawUsers) ? [...rawUsers] : [...DEFAULT_USERS]
 
   // Check if email already exists
   const existingUser = users.find((u) => u.email && u.email.toLowerCase() === cleanEmail)
@@ -41,7 +48,7 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const newUser = {
+  const newUser: UserAccount = {
     id: `user-${Date.now()}`,
     name: cleanName,
     email: cleanEmail,

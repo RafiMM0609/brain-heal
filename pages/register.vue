@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/useAuthStore'
+import { getErrorMessage } from '~/utils/error'
 
 definePageMeta({
   layout: 'auth'
@@ -22,8 +23,8 @@ async function handleRegister() {
   try {
     await authStore.registerUser(name.value, email.value, password.value)
     router.push('/')
-  } catch (err: any) {
-    errorMessage.value = err.data?.statusMessage || err.statusMessage || err.message || 'Gagal mendaftar. Silakan coba lagi.'
+  } catch (err: unknown) {
+    errorMessage.value = getErrorMessage(err, 'Gagal mendaftar. Silakan coba lagi.')
   } finally {
     isLoading.value = false
   }

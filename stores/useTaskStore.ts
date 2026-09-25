@@ -1,4 +1,6 @@
 import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { useApi } from '~/composables/useApi'
 import type { TaskItem, QuadrantType } from '~/types/task'
 
 export const useTaskStore = defineStore('tasks', () => {

@@ -1,4 +1,4 @@
-import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
+import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey, DEFAULT_TASKS } from '~/server/utils/redis'
 import { syncBus } from '~/server/utils/bus'
 import type { TaskItem, QuadrantType } from '~/types/task'
 
@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
 
   const body = await readBody<{ title?: string; quadrant?: QuadrantType; completed?: boolean }>(event)
   const { data: currentTasks } = await redisGet<TaskItem[]>(key)
-  const taskList = currentTasks || []
+  const taskList = currentTasks !== null && currentTasks !== undefined ? currentTasks : [...DEFAULT_TASKS]
 
   const index = taskList.findIndex(t => t.id === id)
   if (index === -1) {
@@ -28,9 +28,9 @@ export default defineEventHandler(async (event) => {
   const existingTask = taskList[index]
   const updatedTask: TaskItem = {
     ...existingTask,
-    ...(body.title !== undefined ? { title: body.title.trim() } : {}),
-    ...(body.quadrant !== undefined ? { quadrant: body.quadrant } : {}),
-    ...(body.completed !== undefined ? { completed: body.completed } : {})
+    ...(body?.title !== undefined ? { title: body.title.trim() } : {}),
+    ...(body?.quadrant !== undefined ? { quadrant: body.quadrant } : {}),
+    ...(body?.completed !== undefined ? { completed: body.completed } : {})
   }
 
   taskList[index] = updatedTask

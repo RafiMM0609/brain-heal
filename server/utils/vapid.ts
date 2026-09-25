@@ -11,8 +11,9 @@ export function getVapidKeys(): VapidKeys {
   if (cachedVapidKeys) return cachedVapidKeys
 
   const config = useRuntimeConfig()
-  const envPublic = process.env.VAPID_PUBLIC_KEY || (config as any).vapidPublicKey
-  const envPrivate = process.env.VAPID_PRIVATE_KEY || (config as any).vapidPrivateKey
+  const runtimeConfig = config as Record<string, unknown>
+  const envPublic = process.env.VAPID_PUBLIC_KEY || (typeof runtimeConfig.vapidPublicKey === 'string' ? runtimeConfig.vapidPublicKey : undefined)
+  const envPrivate = process.env.VAPID_PRIVATE_KEY || (typeof runtimeConfig.vapidPrivateKey === 'string' ? runtimeConfig.vapidPrivateKey : undefined)
 
   if (envPublic && envPrivate) {
     cachedVapidKeys = {

@@ -7,6 +7,8 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
+  text: '',
+  title: '',
   align: 'center',
   position: 'top'
 })

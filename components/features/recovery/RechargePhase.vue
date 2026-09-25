@@ -5,13 +5,13 @@ import { useFocusStore } from '~/stores/useFocusStore'
 const focusStore = useFocusStore()
 const secondsRemaining = ref(5 * 60) // 5 minutes default
 const isTimerRunning = ref(true)
-let timer: any = null
+let timer: ReturnType<typeof setInterval> | null = null
 
 const activeModal = ref<'breathing' | 'hydrate' | 'stretch' | null>(null)
 const hydrationGlasses = ref(0)
 const breathingPhase = ref<'Inhale' | 'Hold' | 'Exhale' | 'Hold (Out)'>('Inhale')
 const breathingSeconds = ref(4)
-let breathingInterval: any = null
+let breathingInterval: ReturnType<typeof setInterval> | null = null
 
 const formattedTime = computed(() => {
   const m = Math.floor(secondsRemaining.value / 60)
@@ -35,7 +35,7 @@ function startRecoveryTimer() {
     if (secondsRemaining.value > 0) {
       secondsRemaining.value--
     } else {
-      clearInterval(timer)
+      if (timer) clearInterval(timer)
       isTimerRunning.value = false
     }
   }, 1000)

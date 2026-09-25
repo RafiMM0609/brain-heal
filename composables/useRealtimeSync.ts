@@ -8,7 +8,7 @@ export function useRealtimeSync() {
   const isConnected = ref(false)
   const lastSyncTime = ref<string | null>(null)
   let eventSource: EventSource | null = null
-  let reconnectTimeout: any = null
+  let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
 
   function syncAllStores() {
     const taskStore = useTaskStore()
@@ -76,7 +76,7 @@ export function useRealtimeSync() {
           }
 
           lastSyncTime.value = new Date().toLocaleTimeString()
-        } catch (err) {
+        } catch {
           // Ignore heartbeats or non-JSON comments
         }
       }

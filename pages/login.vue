@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useAuthStore } from '~/stores/useAuthStore'
+import { getErrorMessage } from '~/utils/error'
 
 definePageMeta({
   layout: 'auth'
@@ -21,8 +22,8 @@ async function handleLogin() {
   try {
     await authStore.loginUser(email.value, password.value)
     router.push('/')
-  } catch (err: any) {
-    errorMessage.value = err.data?.statusMessage || err.statusMessage || err.message || 'Email atau password salah.'
+  } catch (err: unknown) {
+    errorMessage.value = getErrorMessage(err, 'Email atau password salah.')
   } finally {
     isLoading.value = false
   }

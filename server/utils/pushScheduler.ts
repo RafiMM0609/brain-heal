@@ -2,17 +2,19 @@ import webPush from 'web-push'
 import { getVapidKeys } from './vapid'
 import { redisGet, redisSet } from './redis'
 
+export interface PushNotificationPayload {
+  title: string
+  body: string
+  icon?: string
+  badge?: string
+  url?: string
+}
+
 interface PushTimerEntry {
   timeoutId: NodeJS.Timeout
   targetEndTimestamp: number
   subscription: webPush.PushSubscription
-  payload: {
-    title: string
-    body: string
-    icon?: string
-    badge?: string
-    url?: string
-  }
+  payload: PushNotificationPayload
 }
 
 const scheduledPushTimers = new Map<string, PushTimerEntry>()
@@ -46,15 +48,16 @@ export function cancelPushTimer(sessionId: string): boolean {
   return false
 }
 
-export async function sendWebPush(subscription: webPush.PushSubscription, payload: any): Promise<boolean> {
+export async function sendWebPush(subscription: webPush.PushSubscription, payload: PushNotificationPayload | string): Promise<boolean> {
   try {
     getVapidKeys() // Ensure VAPID keys are initialized
     const payloadStr = typeof payload === 'string' ? payload : JSON.stringify(payload)
     await webPush.sendNotification(subscription, payloadStr)
     console.log('[PushScheduler] Web push notification delivered successfully to endpoint:', subscription.endpoint.slice(-20))
     return true
-  } catch (err: any) {
-    console.error('[PushScheduler] Failed to deliver web push notification:', err?.message || err)
+  } catch (err: unknown) {
+    const errorMsg = err instanceof Error ? err.message : String(err)
+    console.error('[PushScheduler] Failed to deliver web push notification:', errorMsg)
     return false
   }
 }
@@ -62,7 +65,7 @@ export async function sendWebPush(subscription: webPush.PushSubscription, payloa
 export async function schedulePushTimer(
   sessionId: string,
   targetEndTimestamp: number,
-  payload: { title: string; body: string; icon?: string; badge?: string; url?: string },
+  payload: PushNotificationPayload,
   subscription?: webPush.PushSubscription
 ): Promise<void> {
   // Cancel any prior timer for this session

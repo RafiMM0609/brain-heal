@@ -3,11 +3,14 @@ import { useAuthStore } from '~/stores/useAuthStore'
 import { useDocumentPiP } from '~/composables/useDocumentPiP'
 import MobileDrawerMenu from '~/components/common/MobileDrawerMenu.vue'
 
+import { useUpstashStatus } from '~/composables/useUpstashStatus'
+
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
 const { pipWindow, isSupported, togglePiP } = useDocumentPiP()
 const { requestNotificationPermission } = useAudioNotification()
+const { isConnected: isRedisConnected, latency: redisLatency } = useUpstashStatus()
 
 const isProfileMenuOpen = ref(false)
 const isMobileDrawerOpen = ref(false)
@@ -78,6 +81,21 @@ onUnmounted(() => {
       >
         <Icon name="material-symbols:picture-in-picture-alt" class="text-[20px]" />
       </button>
+
+      <!-- Upstash Cloud Sync Status Badge -->
+      <div
+        class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-all"
+        :class="isRedisConnected ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'"
+        :title="isRedisConnected ? `Upstash Redis Connected (${redisLatency !== null ? redisLatency + 'ms latency' : 'active'})` : 'Upstash disconnected (local memory fallback)'"
+      >
+        <span
+          class="w-2 h-2 rounded-full transition-colors"
+          :class="isRedisConnected ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-amber-500'"
+        />
+        <span class="text-[11px] font-medium font-mono">
+          {{ isRedisConnected ? 'Upstash' : 'Offline' }}
+        </span>
+      </div>
 
       <button
         @click="requestNotificationPermission"
@@ -153,8 +171,19 @@ onUnmounted(() => {
               </div>
             </div>
 
+            <!-- Cloud Storage Status Info -->
+            <div class="my-2 p-2.5 rounded-xl bg-surface-container-low/70 border border-surface-variant flex items-center justify-between text-xs">
+              <div class="flex items-center gap-2">
+                <Icon name="material-symbols:cloud-done" class="text-[18px]" :class="isRedisConnected ? 'text-emerald-500' : 'text-amber-500'" />
+                <span class="font-medium text-on-surface">Upstash Storage</span>
+              </div>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold" :class="isRedisConnected ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 text-amber-600 dark:text-amber-400'">
+                {{ isRedisConnected ? 'Connected' : 'Offline' }}
+              </span>
+            </div>
+
             <!-- Menu Options -->
-            <div class="pt-2 space-y-1">
+            <div class="pt-1 space-y-1">
               <button
                 @click="handleLogout"
                 class="flex items-center gap-3 w-full px-3 py-2 rounded-xl text-sm font-medium text-error hover:bg-error-container/20 transition-colors"

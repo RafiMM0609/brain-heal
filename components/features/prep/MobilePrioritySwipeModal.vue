@@ -65,7 +65,7 @@ function onPointerDown(e: PointerEvent) {
   if (el && typeof el.setPointerCapture === 'function') {
     try {
       el.setPointerCapture(e.pointerId)
-    } catch (err) {
+    } catch {
       // Fallback ignore
     }
   }
@@ -86,7 +86,7 @@ function onPointerUp(e: PointerEvent) {
   if (el && typeof el.releasePointerCapture === 'function') {
     try {
       el.releasePointerCapture(e.pointerId)
-    } catch (err) {
+    } catch {
       // Fallback ignore
     }
   }

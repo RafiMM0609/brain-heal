@@ -1,4 +1,7 @@
 import { defineStore } from 'pinia'
+import { ref, computed } from 'vue'
+import { useApi } from '~/composables/useApi'
+import { useAudioNotification } from '~/composables/useAudioNotification'
 import type { FocusMode, FocusSession } from '~/types/focus'
 
 export const useFocusStore = defineStore('focus', () => {
@@ -10,7 +13,7 @@ export const useFocusStore = defineStore('focus', () => {
   const durationSeconds = ref<number>(25 * 60) // 25 minutes default
   const elapsedSeconds = ref<number>(0)
   const isRunning = ref<boolean>(false)
-  const timerInterval = ref<any>(null)
+  const timerInterval = ref<ReturnType<typeof setInterval> | null>(null)
   const targetEndTimestamp = ref<number | null>(null)
   const isDistractionDumpOpen = ref<boolean>(false)
   const isMentalClosureOpen = ref<boolean>(false)

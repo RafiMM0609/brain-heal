@@ -5,7 +5,7 @@ export function useAudioNotification() {
   function getAudioContext(): AudioContext | null {
     if (typeof window === 'undefined') return null
     if (!audioCtx) {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext
+      const AudioCtx = window.AudioContext || window.webkitAudioContext
       if (AudioCtx) {
         audioCtx = new AudioCtx()
       }

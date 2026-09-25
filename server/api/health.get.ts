@@ -17,18 +17,35 @@ export default defineEventHandler(async () => {
     const pong = await client.ping()
     const latencyMs = Date.now() - startTime
 
+    // Fetch existing keys matching neuralflow namespace to verify storage
+    const keys = await client.keys('neuralflow:*')
+
+    const rawUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || ''
+    let host = 'Upstash Cloud'
+    try {
+      if (rawUrl) {
+        host = new URL(rawUrl).host
+      }
+    } catch {
+      // ignore URL parsing error
+    }
+
     return {
       status: 'ok',
       message: 'Successfully connected to Upstash Redis.',
       redisConnected: true,
       pingResponse: pong,
+      endpointHost: host,
+      keyCount: keys.length,
+      keys,
       latencyMs,
       timestamp: new Date().toISOString()
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Failed to ping Upstash Redis.'
     return {
       status: 'error',
-      message: error.message || 'Failed to ping Upstash Redis.',
+      message,
       redisConnected: false,
       timestamp: new Date().toISOString()
     }

@@ -1,13 +1,7 @@
 import { REDIS_KEYS, redisGet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
+import type { ShareItem } from '~/types/share'
 
-export interface ShareItem {
-  id: string
-  type: 'text' | 'image'
-  content: string
-  fileName?: string
-  fileSizeFormatted?: string
-  createdAt: string
-}
+export type { ShareItem }
 
 export default defineEventHandler(async (event) => {
   const userIdentifier = getAuthUserIdentifier(event)

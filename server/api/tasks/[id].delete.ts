@@ -1,4 +1,4 @@
-import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
+import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey, DEFAULT_TASKS } from '~/server/utils/redis'
 import { syncBus } from '~/server/utils/bus'
 import type { TaskItem } from '~/types/task'
 
@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
   }
 
   const { data: currentTasks } = await redisGet<TaskItem[]>(key)
-  const taskList = currentTasks || []
+  const taskList = currentTasks !== null && currentTasks !== undefined ? currentTasks : [...DEFAULT_TASKS]
 
   const updatedTasks = taskList.filter(t => t.id !== id)
   await redisSet(key, updatedTasks)

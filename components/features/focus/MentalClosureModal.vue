@@ -14,7 +14,6 @@ const isSubmitting = ref(false)
 const showNextTaskSelector = ref(false)
 
 const taskTitle = computed(() => focusStore.closureTaskData?.title || focusStore.activeTaskTitle || 'Focus Task')
-const sessionMinutes = computed(() => focusStore.closureTaskData?.sessionMinutes || Math.max(1, Math.round(focusStore.durationSeconds / 60)))
 
 function resetForm() {
   offloadNote.value = ''
