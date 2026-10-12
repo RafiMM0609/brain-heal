@@ -35,18 +35,30 @@ function updateViewport() {
   }
 }
 
+function handleKeydown(e: KeyboardEvent) {
+  if (e.key === 'Escape' && props.isOpen) {
+    handleClose()
+  }
+}
+
 onMounted(() => {
-  if (typeof window !== 'undefined' && window.visualViewport) {
-    window.visualViewport.addEventListener('resize', updateViewport)
-    window.visualViewport.addEventListener('scroll', updateViewport)
-    updateViewport()
+  if (typeof window !== 'undefined') {
+    window.addEventListener('keydown', handleKeydown)
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', updateViewport)
+      window.visualViewport.addEventListener('scroll', updateViewport)
+      updateViewport()
+    }
   }
 })
 
 onUnmounted(() => {
-  if (typeof window !== 'undefined' && window.visualViewport) {
-    window.visualViewport.removeEventListener('resize', updateViewport)
-    window.visualViewport.removeEventListener('scroll', updateViewport)
+  if (typeof window !== 'undefined') {
+    window.removeEventListener('keydown', handleKeydown)
+    if (window.visualViewport) {
+      window.visualViewport.removeEventListener('resize', updateViewport)
+      window.visualViewport.removeEventListener('scroll', updateViewport)
+    }
   }
 })
 
@@ -73,23 +85,27 @@ watch(
           @click.self="handleClose"
         >
           <div
+            role="dialog"
+            aria-modal="true"
+            :aria-labelledby="title ? 'modal-title' : undefined"
             class="bg-surface rounded-t-2xl sm:rounded-xl border border-surface-variant shadow-2xl max-w-lg w-full overflow-hidden flex flex-col transform transition-all pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:pb-0 max-h-[90vh] sm:max-h-[80vh]"
             :style="{ maxHeight: maxModalHeight }"
           >
             <!-- Mobile Bottom Sheet Drag Handle -->
-            <div class="w-12 h-1.5 bg-outline/30 rounded-full mx-auto my-2 block sm:hidden shrink-0" />
+            <div class="w-12 h-1.5 bg-outline/30 rounded-full mx-auto my-2 block sm:hidden shrink-0" aria-hidden="true" />
 
             <!-- Header -->
             <div v-if="title || $slots.header" class="flex justify-between items-center px-5 sm:px-6 py-3 sm:py-4 border-b border-surface-variant shrink-0">
-              <h3 v-if="title" class="text-headline-md font-semibold text-primary">
+              <h3 v-if="title" id="modal-title" class="text-headline-md font-semibold text-primary">
                 {{ title }}
               </h3>
               <slot name="header" />
               <button
                 @click="handleClose"
                 class="text-outline hover:text-primary transition-colors p-1 rounded-md"
+                aria-label="Tutup Dialog"
               >
-                <Icon name="material-symbols:close" class="text-[20px]" />
+                <Icon name="material-symbols:close" class="text-[20px]" aria-hidden="true" />
               </button>
             </div>
 

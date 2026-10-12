@@ -73,10 +73,12 @@ function handleGuestAccess() {
     <!-- Login Form -->
     <form @submit.prevent="handleLogin" class="space-y-4">
       <div>
-        <label class="block text-label-sm font-semibold text-on-surface mb-1">Email Address</label>
+        <label for="login-email" class="block text-label-sm font-semibold text-on-surface mb-1">Email Address</label>
         <input
+          id="login-email"
           v-model="email"
           type="email"
+          autocomplete="email"
           required
           placeholder="doctor@cognitivelab.ai"
           :disabled="isLoading"
@@ -85,10 +87,12 @@ function handleGuestAccess() {
       </div>
 
       <div>
-        <label class="block text-label-sm font-semibold text-on-surface mb-1">Password</label>
+        <label for="login-password" class="block text-label-sm font-semibold text-on-surface mb-1">Password</label>
         <input
+          id="login-password"
           v-model="password"
           type="password"
+          autocomplete="current-password"
           required
           placeholder="••••••••"
           :disabled="isLoading"
@@ -101,7 +105,7 @@ function handleGuestAccess() {
         :disabled="isLoading"
         class="w-full py-3.5 mt-2 bg-primary text-on-primary rounded-xl font-bold text-base hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        <Icon v-if="isLoading" name="material-symbols:progress-activity" class="animate-spin text-[20px]" />
+        <Icon v-if="isLoading" name="material-symbols:progress-activity" class="animate-spin text-[20px]" aria-hidden="true" />
         <span>{{ isLoading ? 'Signing In...' : 'Sign In' }}</span>
       </button>
     </form>

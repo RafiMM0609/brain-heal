@@ -4,6 +4,7 @@ import { useDocumentPiP } from '~/composables/useDocumentPiP'
 import MobileDrawerMenu from '~/components/common/MobileDrawerMenu.vue'
 
 import { useUpstashStatus } from '~/composables/useUpstashStatus'
+import { useCatCompanion } from '~/composables/useCatCompanion'
 
 const authStore = useAuthStore()
 const router = useRouter()
@@ -11,6 +12,7 @@ const route = useRoute()
 const { pipWindow, isSupported, togglePiP } = useDocumentPiP()
 const { requestNotificationPermission } = useAudioNotification()
 const { isConnected: isRedisConnected, latency: redisLatency } = useUpstashStatus()
+const { settings: companionSettings } = useCatCompanion()
 
 const isProfileMenuOpen = ref(false)
 const isMobileDrawerOpen = ref(false)
@@ -96,6 +98,21 @@ onUnmounted(() => {
           {{ isRedisConnected ? 'Upstash' : 'Offline' }}
         </span>
       </div>
+
+      <!-- Focus Cat Companion Quick Trigger -->
+      <button
+        @click="companionSettings.enabled = !companionSettings.enabled"
+        class="p-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-full transition-colors duration-200 flex items-center justify-center relative group"
+        :class="{ 'bg-primary/10 text-primary': companionSettings.enabled }"
+        :title="companionSettings.enabled ? `Focus Companion (${companionSettings.name}): Active (Click to toggle)` : 'Enable Focus Cat Companion'"
+        aria-label="Toggle Focus Companion"
+      >
+        <Icon name="material-symbols:pets" class="text-[20px]" />
+        <span
+          v-if="companionSettings.enabled"
+          class="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-surface"
+        />
+      </button>
 
       <button
         @click="requestNotificationPermission"

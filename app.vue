@@ -3,6 +3,7 @@ import { useFocusStore } from '~/stores/useFocusStore'
 import AppToast from '~/components/ui/AppToast.vue'
 import AppTaskDetailModal from '~/components/ui/AppTaskDetailModal.vue'
 import MobilePrioritySwipeModal from '~/components/features/prep/MobilePrioritySwipeModal.vue'
+import FocusCatCompanion from '~/components/features/companion/FocusCatCompanion.vue'
 
 const focusStore = useFocusStore()
 useRealtimeSync()
@@ -41,4 +42,5 @@ useHead({
   <AppToast />
   <AppTaskDetailModal />
   <MobilePrioritySwipeModal />
+  <FocusCatCompanion />
 </template>

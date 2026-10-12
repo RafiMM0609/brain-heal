@@ -74,10 +74,12 @@ function handleGuestAccess() {
     <!-- Register Form -->
     <form @submit.prevent="handleRegister" class="space-y-4">
       <div>
-        <label class="block text-label-sm font-semibold text-on-surface mb-1">Full Name</label>
+        <label for="register-name" class="block text-label-sm font-semibold text-on-surface mb-1">Full Name</label>
         <input
+          id="register-name"
           v-model="name"
           type="text"
+          autocomplete="name"
           required
           placeholder="Dr. Alex Rivera"
           :disabled="isLoading"
@@ -86,10 +88,12 @@ function handleGuestAccess() {
       </div>
 
       <div>
-        <label class="block text-label-sm font-semibold text-on-surface mb-1">Email Address</label>
+        <label for="register-email" class="block text-label-sm font-semibold text-on-surface mb-1">Email Address</label>
         <input
+          id="register-email"
           v-model="email"
           type="email"
+          autocomplete="email"
           required
           placeholder="alex@cognitivelab.ai"
           :disabled="isLoading"
@@ -98,10 +102,12 @@ function handleGuestAccess() {
       </div>
 
       <div>
-        <label class="block text-label-sm font-semibold text-on-surface mb-1">Password</label>
+        <label for="register-password" class="block text-label-sm font-semibold text-on-surface mb-1">Password</label>
         <input
+          id="register-password"
           v-model="password"
           type="password"
+          autocomplete="new-password"
           required
           placeholder="••••••••"
           :disabled="isLoading"
@@ -114,7 +120,7 @@ function handleGuestAccess() {
         :disabled="isLoading"
         class="w-full py-3.5 mt-2 bg-primary text-on-primary rounded-xl font-bold text-base hover:bg-primary-container transition-colors shadow-sm disabled:opacity-50 flex items-center justify-center gap-2"
       >
-        <Icon v-if="isLoading" name="material-symbols:progress-activity" class="animate-spin text-[20px]" />
+        <Icon v-if="isLoading" name="material-symbols:progress-activity" class="animate-spin text-[20px]" aria-hidden="true" />
         <span>{{ isLoading ? 'Registering...' : 'Register Account' }}</span>
       </button>
     </form>
