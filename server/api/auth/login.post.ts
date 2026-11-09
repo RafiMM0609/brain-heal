@@ -1,5 +1,11 @@
-import { REDIS_KEYS, redisGet, redisSet, DEFAULT_USERS } from '~/server/utils/redis'
-import type { UserAccount } from '~/types/user'
+import {
+  verifyUserPassword,
+  hashPassword,
+  createSession,
+  setSessionCookie
+} from '~/server/utils/auth'
+import { findUserByEmail, updateUser, normaliseEmail } from '~/server/utils/users'
+import { enforceRateLimit } from '~/server/utils/rateLimit'
 
 interface LoginRequestBody {
   email?: string
@@ -7,54 +13,51 @@ interface LoginRequestBody {
 }
 
 export default defineEventHandler(async (event) => {
+  // Audit H4: online password guessing must be rate limited.
+  await enforceRateLimit(event, 'auth:login', 10, 60)
+
   const body = await readBody<LoginRequestBody>(event)
   const { email, password } = body || {}
 
   if (!email || typeof email !== 'string' || !email.trim()) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Email wajib diisi.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Email wajib diisi.' })
   }
-
   if (!password || typeof password !== 'string') {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Password wajib diisi.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Password wajib diisi.' })
   }
 
-  const cleanEmail = email.trim().toLowerCase()
+  const cleanEmail = normaliseEmail(email).slice(0, 254)
+  const user = await findUserByEmail(cleanEmail)
 
-  // Fetch registered users list from Redis
-  const { data: rawUsers } = await redisGet<UserAccount[]>(REDIS_KEYS.USERS)
-  let users: UserAccount[] = []
+  // Always perform one comparison so a missing account and a wrong password
+  // cost the same. Handles both scrypt hashes and legacy plaintext records.
+  const { ok, needsRehash } = await verifyUserPassword(password, user?.password)
 
-  if (rawUsers === null || rawUsers === undefined) {
-    users = [...DEFAULT_USERS]
-    await redisSet(REDIS_KEYS.USERS, users)
-  } else if (Array.isArray(rawUsers)) {
-    users = rawUsers
-  }
-
-  const user = users.find(
-    (u) => u.email && u.email.toLowerCase() === cleanEmail && u.password === password
-  )
-
-  if (!user) {
+  if (!user || !ok) {
     throw createError({
       statusCode: 401,
       statusMessage: 'Email atau password salah.'
     })
   }
 
-  const { password: _, ...userWithoutPassword } = user
+  // Upgrade a legacy plaintext record on first successful login. This writes
+  // only this user's hash field, so it cannot clobber a concurrent registration.
+  if (needsRehash) {
+    await updateUser({ ...user, password: await hashPassword(password) })
+  }
+
+  const session = await createSession(user.id, false)
+  setSessionCookie(event, session.token)
 
   return {
     success: true,
     user: {
-      ...userWithoutPassword,
-      isGuest: false
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      isGuest: false,
+      avatarUrl: user.avatarUrl,
+      state: user.state
     }
   }
 })

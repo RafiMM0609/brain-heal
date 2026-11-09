@@ -1,6 +1,21 @@
 import { syncBus, type SyncEventPayload } from '~/server/utils/bus'
+import { resolveSession } from '~/server/utils/auth'
 
-export default defineEventHandler((event) => {
+/**
+ * Server-sent events for cross-tab / cross-device sync.
+ *
+ * SECURITY (audit H1): the stream requires a valid session and filters events
+ * server-side by the session's opaque user id. It previously broadcast every
+ * tenant's identifier and activity to any anonymous listener; the only "filter"
+ * was in client-side JS, which `curl` trivially bypasses.
+ */
+export default defineEventHandler(async (event) => {
+  const resolved = await resolveSession(event)
+  if (!resolved) {
+    throw createError({ statusCode: 401, statusMessage: 'Authentication required.' })
+  }
+  const userId = resolved.user.id
+
   setHeaders(event, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache, no-transform',
@@ -10,16 +25,26 @@ export default defineEventHandler((event) => {
 
   const res = event.node.res
 
-  // Initial connection confirmation event
   res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: new Date().toISOString() })}\n\n`)
 
   const handleSync = (payload: SyncEventPayload) => {
-    res.write(`data: ${JSON.stringify(payload)}\n\n`)
+    // Tenant isolation: drop anything that is not ours.
+    if (payload.userId !== userId) return
+
+    // Do not leak the internal user id to the browser; it only needs the type.
+    const outbound = {
+      type: payload.type,
+      action: payload.action,
+      clientId: payload.clientId,
+      timestamp: payload.timestamp
+    }
+    if (!res.writableEnded) {
+      res.write(`data: ${JSON.stringify(outbound)}\n\n`)
+    }
   }
 
   syncBus.on('sync', handleSync)
 
-  // Periodic heartbeat comment every 15s to keep connection alive across proxies/mobile browsers
   const heartbeat = setInterval(() => {
     if (!res.writableEnded) {
       res.write(`: heartbeat\n\n`)

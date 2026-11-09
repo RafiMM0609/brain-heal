@@ -1,5 +1,3 @@
-import { useAuthStore } from '~/stores/useAuthStore'
-
 export function getClientId(): string {
   if (!import.meta.client || typeof window === 'undefined') return 'server'
   if (!window.__NUXT_CLIENT_ID__) {
@@ -8,24 +6,19 @@ export function getClientId(): string {
   return window.__NUXT_CLIENT_ID__
 }
 
+/**
+ * Audit C1: this composable used to attach `x-user-email` / `x-user-id` headers
+ * to every request, which was the entire authentication mechanism (and the
+ * tenant isolation bypass). Identity now travels exclusively in the httpOnly
+ * session cookie, which the browser attaches automatically -- so there is
+ * nothing to build here beyond the non-security `x-client-id` used to suppress
+ * SSE self-echo.
+ */
 export function useApi() {
   function getAuthHeaders(): Record<string, string> {
     const headers: Record<string, string> = {}
     if (import.meta.client) {
       headers['x-client-id'] = getClientId()
-    }
-    try {
-      const authStore = useAuthStore()
-      if (authStore.user) {
-        if (authStore.user.email) {
-          headers['x-user-email'] = authStore.user.email
-        }
-        if (authStore.user.id) {
-          headers['x-user-id'] = authStore.user.id
-        }
-      }
-    } catch {
-      // Pinia store might not be ready yet
     }
     return headers
   }
@@ -47,4 +40,3 @@ export function useApi() {
     getClientId
   }
 }
-

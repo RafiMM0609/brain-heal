@@ -1,37 +1,38 @@
-import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
+import { requireSession, getUserRedisKey } from '~/server/utils/auth'
+import { REDIS_KEYS } from '~/server/utils/redis'
+import { listCollection, putCollectionItem, hashLen } from '~/server/utils/store'
 import { syncBus } from '~/server/utils/bus'
 import type { DistractionItem } from '~/types/focus'
 
+const MAX_CONTENT_LENGTH = 2000
+const MAX_ITEMS = 500
+
 export default defineEventHandler(async (event) => {
-  const userIdentifier = getAuthUserIdentifier(event)
-  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.DISTRACTIONS)
+  const { user } = await requireSession(event)
+  const key = getUserRedisKey(user.id, REDIS_KEYS.DISTRACTIONS)
   const body = await readBody<{ content?: string }>(event)
 
-  if (!body || !body.content || !body.content.trim()) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Distraction content is required.'
-    })
+  if (!body || typeof body.content !== 'string' || !body.content.trim()) {
+    throw createError({ statusCode: 400, statusMessage: 'Distraction content is required.' })
+  }
+  if (body.content.length > MAX_CONTENT_LENGTH) {
+    throw createError({ statusCode: 400, statusMessage: 'Distraction content is too long.' })
+  }
+  if ((await hashLen(key)) >= MAX_ITEMS) {
+    throw createError({ statusCode: 400, statusMessage: 'Distraction limit reached.' })
   }
 
-  const { data: currentDistractions } = await redisGet<DistractionItem[]>(key)
-  const distractionList = currentDistractions || []
-
   const newItem: DistractionItem = {
-    id: `distraction-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+    id: `distraction-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
     content: body.content.trim(),
     createdAt: new Date().toISOString(),
     convertedToTask: false
   }
 
-  const updatedList = [newItem, ...distractionList]
-  await redisSet(key, updatedList)
+  await putCollectionItem(key, newItem)
 
-  // Broadcast sync event to all connected clients
-  syncBus.emitSync('distractions', 'create', userIdentifier)
+  syncBus.emitSync(event, 'distractions', 'create', user.id)
 
-  return {
-    distraction: newItem,
-    distractions: updatedList
-  }
+  const distractions = await listCollection<DistractionItem>(key)
+  return { distraction: newItem, distractions }
 })

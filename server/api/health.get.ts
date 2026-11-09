@@ -1,51 +1,35 @@
 import { getRedisClient } from '~/server/utils/redis'
 
+/**
+ * Public liveness probe.
+ *
+ * Audit C4: this endpoint previously returned the full Upstash hostname, ping
+ * payload and -- critically -- `client.keys('neuralflow:*')`, i.e. every tenant
+ * key name. Since tenant keys embed user identity, that was a turnkey account
+ * enumeration primitive. It now exposes nothing beyond up/down state.
+ */
 export default defineEventHandler(async () => {
-  const startTime = Date.now()
   const client = getRedisClient()
 
   if (!client) {
     return {
       status: 'degraded',
-      message: 'Upstash Redis client not configured or missing credentials.',
       redisConnected: false,
       timestamp: new Date().toISOString()
     }
   }
 
   try {
-    const pong = await client.ping()
-    const latencyMs = Date.now() - startTime
-
-    // Fetch existing keys matching neuralflow namespace to verify storage
-    const keys = await client.keys('neuralflow:*')
-
-    const rawUrl = process.env.UPSTASH_REDIS_REST_URL || process.env.KV_REST_API_URL || ''
-    let host = 'Upstash Cloud'
-    try {
-      if (rawUrl) {
-        host = new URL(rawUrl).host
-      }
-    } catch {
-      // ignore URL parsing error
-    }
-
+    await client.ping()
     return {
       status: 'ok',
-      message: 'Successfully connected to Upstash Redis.',
       redisConnected: true,
-      pingResponse: pong,
-      endpointHost: host,
-      keyCount: keys.length,
-      keys,
-      latencyMs,
       timestamp: new Date().toISOString()
     }
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to ping Upstash Redis.'
+  } catch {
+    // Never echo driver error text: it can disclose the endpoint host.
     return {
       status: 'error',
-      message,
       redisConnected: false,
       timestamp: new Date().toISOString()
     }

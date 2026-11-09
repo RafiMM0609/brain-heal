@@ -10,7 +10,8 @@ if (fs.existsSync(envPath)) {
 
 export default defineNuxtConfig({
   compatibilityDate: '2026-08-28',
-  devtools: { enabled: true },
+  // Audit L1: DevTools must never be enabled in a production build.
+  devtools: { enabled: import.meta.dev },
 
   experimental: {
     appManifest: false,
@@ -72,6 +73,39 @@ export default defineNuxtConfig({
   },
 
   nitro: {
-    preset: process.env.VERCEL ? 'vercel' : undefined
+    preset: process.env.VERCEL ? 'vercel' : undefined,
+    // Audit M3: reject oversized bodies before they are buffered into memory.
+    routeRules: {
+      '/api/**': {
+        cors: false,
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, private',
+          'X-Content-Type-Options': 'nosniff',
+          'Referrer-Policy': 'no-referrer'
+        }
+      },
+      '/**': {
+        headers: {
+          // Audit H5: baseline hardening headers, applied to every response.
+          'X-Content-Type-Options': 'nosniff',
+          'X-Frame-Options': 'DENY',
+          'Referrer-Policy': 'strict-origin-when-cross-origin',
+          'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
+          'Cross-Origin-Opener-Policy': 'same-origin',
+          'Content-Security-Policy': [
+            "default-src 'self'",
+            "script-src 'self' 'unsafe-inline'",
+            "style-src 'self' 'unsafe-inline'",
+            "img-src 'self' data: blob: https://lh3.googleusercontent.com",
+            "font-src 'self' data:",
+            "connect-src 'self'",
+            "object-src 'none'",
+            "base-uri 'self'",
+            "form-action 'self'",
+            "frame-ancestors 'none'"
+          ].join('; ')
+        }
+      }
+    }
   }
 })

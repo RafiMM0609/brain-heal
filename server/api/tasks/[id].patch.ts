@@ -1,46 +1,51 @@
-import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey, DEFAULT_TASKS } from '~/server/utils/redis'
+import { requireSession, getUserRedisKey } from '~/server/utils/auth'
+import { REDIS_KEYS } from '~/server/utils/redis'
+import { patchCollectionItem } from '~/server/utils/store'
 import { syncBus } from '~/server/utils/bus'
 import type { TaskItem, QuadrantType } from '~/types/task'
 
+const MAX_TITLE_LENGTH = 500
+const VALID_QUADRANTS: QuadrantType[] = ['inbox', 'do-first', 'schedule', 'delegate', 'eliminate']
+
 export default defineEventHandler(async (event) => {
-  const userIdentifier = getAuthUserIdentifier(event)
-  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.TASKS)
+  const { user } = await requireSession(event)
+  const key = getUserRedisKey(user.id, REDIS_KEYS.TASKS)
   const id = getRouterParam(event, 'id')
   if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Task ID parameter is required.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Task ID parameter is required.' })
   }
 
   const body = await readBody<{ title?: string; quadrant?: QuadrantType; completed?: boolean }>(event)
-  const { data: currentTasks } = await redisGet<TaskItem[]>(key)
-  const taskList = currentTasks !== null && currentTasks !== undefined ? currentTasks : [...DEFAULT_TASKS]
 
-  const index = taskList.findIndex(t => t.id === id)
-  if (index === -1) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: `Task with ID ${id} not found.`
-    })
+  if (body?.title !== undefined) {
+    if (typeof body.title !== 'string' || !body.title.trim()) {
+      throw createError({ statusCode: 400, statusMessage: 'Task title cannot be empty.' })
+    }
+    if (body.title.length > MAX_TITLE_LENGTH) {
+      throw createError({ statusCode: 400, statusMessage: 'Task title is too long.' })
+    }
+  }
+  if (body?.quadrant !== undefined && !VALID_QUADRANTS.includes(body.quadrant)) {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid quadrant.' })
+  }
+  if (body?.completed !== undefined && typeof body.completed !== 'boolean') {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid completed value.' })
   }
 
-  const existingTask = taskList[index]
-  const updatedTask: TaskItem = {
-    ...existingTask,
+  // Audit M5: only this task's hash field is rewritten, so two people editing
+  // different tasks simultaneously no longer overwrite each other.
+  const updatedTask = await patchCollectionItem<TaskItem>(key, id, (current) => ({
+    ...current,
     ...(body?.title !== undefined ? { title: body.title.trim() } : {}),
     ...(body?.quadrant !== undefined ? { quadrant: body.quadrant } : {}),
     ...(body?.completed !== undefined ? { completed: body.completed } : {})
+  }))
+
+  if (!updatedTask) {
+    throw createError({ statusCode: 404, statusMessage: 'Task not found.' })
   }
 
-  taskList[index] = updatedTask
-  await redisSet(key, taskList)
+  syncBus.emitSync(event, 'tasks', 'update', user.id)
 
-  // Broadcast sync event to all connected clients
-  syncBus.emitSync('tasks', 'update', userIdentifier)
-
-  return {
-    task: updatedTask,
-    tasks: taskList
-  }
+  return { task: updatedTask }
 })

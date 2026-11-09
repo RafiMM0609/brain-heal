@@ -1,113 +1,90 @@
 import { defineStore } from 'pinia'
 import type { UserProfile } from '~/types/user'
 
-const STORAGE_KEY = 'neuralflow_user'
-
-const defaultGuest: UserProfile = {
-  id: 'guest-1',
-  name: 'Cognitive Lab Guest',
-  isGuest: true,
-  avatarUrl: 'https://lh3.googleusercontent.com/aida-public/AB6AXuBaqN2vR_ltj1O12xsA93TrTwUQjwZSEr1BgDryDkchdLcebgdhls7ka0H717ld8PB6r53uifdMWTC46nHJfyCL3m1y5LaEHA_I0BUa32zUsrKXYTcij-QD24oeiKxhaJxIeLGFILUqSx3Bp9mJcQ7anwB5OPUW88219LfaGvcrQyjbx7h3WN9ViglZcR4KBeQpq2lk8J-6r3YETsnBXKOEYZ8n2zPZJWqjYJvyyHzvgNvPhC-hQ2Pm',
-  state: 'Relaxed Alertness'
+interface MeResponse {
+  user: UserProfile
 }
 
 export const useAuthStore = defineStore('auth', () => {
-  const userCookie = useCookie<UserProfile | null>(STORAGE_KEY, {
-    maxAge: 60 * 60 * 24 * 30, // 30 days
-    path: '/'
-  })
-
   const user = ref<UserProfile | null>(null)
-
-  function loadUserFromStorage() {
-    // 1. Check cookie (works on both SSR and client)
-    if (userCookie.value && !userCookie.value.isGuest) {
-      user.value = userCookie.value
-      return
-    }
-
-    // 2. Check localStorage on client if cookie wasn't set or was empty
-    if (import.meta.client) {
-      try {
-        const saved = localStorage.getItem(STORAGE_KEY)
-        if (saved) {
-          const parsed = JSON.parse(saved)
-          if (parsed && parsed.id && !parsed.isGuest) {
-            user.value = parsed
-            userCookie.value = parsed
-            return
-          }
-        }
-      } catch (err) {
-        console.error('Failed to parse stored user profile:', err)
-      }
-    }
-
-    // 3. Fallback to Guest
-    user.value = defaultGuest
-  }
-
-  // Initial load when store is instantiated
-  loadUserFromStorage()
+  const isLoading = ref(false)
+  const isResolved = ref(false)
 
   const isAuthenticated = computed(() => !!user.value && !user.value.isGuest)
 
+  /**
+   * Audit M1: authentication state is no longer read from localStorage or an
+   * editable cookie. The server is the single source of truth: we ask
+   * /api/auth/me, which reads only the httpOnly session cookie.
+   *
+   * Two correctness details:
+   *  - Concurrency: the auth plugin and the route middleware can both call this
+   *    during one navigation. Returning early while a request was in flight
+   *    left the second caller with `user === null`, which bounced authenticated
+   *    users back to /login. Callers now share the same in-flight promise.
+   *  - SSR: during server rendering the browser cookie is not attached to the
+   *    internal `$fetch`, so `/api/auth/me` always answered 401 and the
+   *    middleware redirected on the very first paint. The incoming request
+   *    headers are forwarded explicitly.
+   */
+  let inflight: Promise<void> | null = null
+
+  async function loadUserFromStorage() {
+    if (inflight) return inflight
+
+    inflight = (async () => {
+      isLoading.value = true
+      try {
+        const res = await $fetch<MeResponse>('/api/auth/me', {
+          headers: import.meta.server ? useRequestHeaders(['cookie']) : undefined
+        })
+        user.value = res.user
+      } catch {
+        user.value = null
+      } finally {
+        isLoading.value = false
+        isResolved.value = true
+        inflight = null
+      }
+    })()
+
+    return inflight
+  }
+
   function refreshUserData() {
-    if (import.meta.client) {
-      nextTick(() => {
-        try {
-          useTaskStore().fetchTasks()
-          useFocusStore().fetchSession()
-          useDistractionStore().fetchDistractions()
-          useShareStore().fetchItems()
-        } catch (err) {
-          console.error('[AuthStore] Error refreshing user data:', err)
-        }
-      })
-    }
+    if (!import.meta.client) return
+    nextTick(() => {
+      try {
+        useTaskStore().fetchTasks()
+        useFocusStore().fetchSession()
+        useDistractionStore().fetchDistractions()
+        useShareStore().fetchItems()
+      } catch (err) {
+        console.error('[AuthStore] Error refreshing user data:', err)
+      }
+    })
   }
 
-  function saveUser(profile: UserProfile | null) {
-    if (profile && !profile.isGuest) {
-      user.value = profile
-      userCookie.value = profile
-      if (import.meta.client) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(profile))
-      }
-    } else if (profile && profile.isGuest) {
-      user.value = profile
-      userCookie.value = profile
-      if (import.meta.client) {
-        localStorage.removeItem(STORAGE_KEY)
-      }
-    } else {
-      user.value = defaultGuest
-      userCookie.value = null
-      if (import.meta.client) {
-        localStorage.removeItem(STORAGE_KEY)
-      }
-    }
+  /** Starts an isolated guest session: the server mints a random tenant id. */
+  async function loginAsGuest() {
+    const res = await $fetch<MeResponse>('/api/auth/guest', { method: 'POST' })
+    user.value = res.user
+    isResolved.value = true
     refreshUserData()
-  }
-
-  function loginAsGuest() {
-    const guestUser: UserProfile = {
-      id: `guest-${Date.now()}`,
-      name: 'Guest Researcher',
-      isGuest: true,
-      avatarUrl: defaultGuest.avatarUrl,
-      state: 'Relaxed Alertness'
-    }
-    saveUser(guestUser)
+    return res
   }
 
   async function registerUser(name: string, email: string, password: string) {
+    // The response sets the httpOnly session cookie; the body carries the
+    // profile, which is display data only and never an authorization input.
     const res = await $fetch<{ success: boolean; user: UserProfile }>('/api/auth/register', {
       method: 'POST',
       body: { name, email, password }
     })
     if (res?.user) {
-      saveUser(res.user)
+      user.value = res.user
+      isResolved.value = true
+      refreshUserData()
     }
     return res
   }
@@ -118,17 +95,26 @@ export const useAuthStore = defineStore('auth', () => {
       body: { email, password }
     })
     if (res?.user) {
-      saveUser(res.user)
+      user.value = res.user
+      isResolved.value = true
+      refreshUserData()
     }
     return res
   }
 
-  function logout() {
-    saveUser(null)
+  async function logout() {
+    try {
+      await $fetch('/api/auth/logout', { method: 'POST' })
+    } catch {
+      // Clearing local state is the important part; the cookie is httpOnly.
+    }
+    user.value = null
   }
 
   return {
     user,
+    isLoading,
+    isResolved,
     isAuthenticated,
     loadUserFromStorage,
     loginAsGuest,
@@ -137,4 +123,3 @@ export const useAuthStore = defineStore('auth', () => {
     logout
   }
 })
-

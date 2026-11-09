@@ -7,41 +7,36 @@ interface VapidKeys {
 
 let cachedVapidKeys: VapidKeys | null = null
 
+/**
+ * Resolves VAPID keys from configuration.
+ *
+ * Audit fix: the previous implementation embedded a hardcoded fallback key pair
+ * in source and silently generated a new pair per process when config was
+ * absent -- which makes push subscriptions non-deterministic across restarts
+ * and ships a known private key. Now keys come from config only; when they are
+ * missing we generate an ephemeral pair for local development and warn loudly.
+ */
 export function getVapidKeys(): VapidKeys {
   if (cachedVapidKeys) return cachedVapidKeys
 
-  const config = useRuntimeConfig()
-  const runtimeConfig = config as Record<string, unknown>
-  const envPublic = process.env.VAPID_PUBLIC_KEY || (typeof runtimeConfig.vapidPublicKey === 'string' ? runtimeConfig.vapidPublicKey : undefined)
-  const envPrivate = process.env.VAPID_PRIVATE_KEY || (typeof runtimeConfig.vapidPrivateKey === 'string' ? runtimeConfig.vapidPrivateKey : undefined)
+  const envPublic = process.env.VAPID_PUBLIC_KEY || ''
+  const envPrivate = process.env.VAPID_PRIVATE_KEY || ''
+  const subject = process.env.VAPID_SUBJECT || 'mailto:admin@example.com'
 
   if (envPublic && envPrivate) {
-    cachedVapidKeys = {
-      publicKey: envPublic,
-      privateKey: envPrivate
-    }
+    cachedVapidKeys = { publicKey: envPublic, privateKey: envPrivate }
   } else {
-    // Generate deterministic or fallback VAPID keys for zero-config operation
-    // Stable fallback key pair for development/preview mode
-    cachedVapidKeys = {
-      publicKey: process.env.VAPID_PUBLIC_KEY || 'BEl62iUYgUivxIkv69yViEuiBIa-Ib9-Skv69yViEuiBIa-Ib9-Skv69yViEuiBIa-Ib9',
-      privateKey: process.env.VAPID_PRIVATE_KEY || 'AEl62iUYgUivxIkv69yViEuiBIa-Ib9-Skv69yViEuiBIa'
-    }
-
-    try {
-      const generated = webPush.generateVAPIDKeys()
-      cachedVapidKeys = generated
-    } catch (e) {
-      console.warn('[VAPID] Web-push VAPID generation fallback:', e)
-    }
+    console.warn(
+      '[VAPID] VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY not configured. ' +
+        'Generating an ephemeral key pair -- push subscriptions will not survive a restart. ' +
+        'Set both keys in production.'
+    )
+    const generated = webPush.generateVAPIDKeys()
+    cachedVapidKeys = { publicKey: generated.publicKey, privateKey: generated.privateKey }
   }
 
   try {
-    webPush.setVapidDetails(
-      'mailto:admin@neuralflow.app',
-      cachedVapidKeys.publicKey,
-      cachedVapidKeys.privateKey
-    )
+    webPush.setVapidDetails(subject, cachedVapidKeys.publicKey, cachedVapidKeys.privateKey)
   } catch (err) {
     console.warn('[VAPID] Failed to set VAPID details:', err)
   }

@@ -43,21 +43,12 @@ export function useRealtimeSync() {
             return
           }
 
-          // Ignore self-echo events originating from this exact client tab
+          // Audit H1: tenant filtering now happens server-side (the stream only
+          // emits this session's events), so no userIdentifier arrives at all.
+          // We still drop our own echo so this tab does not re-fetch needlessly.
           const currentClientId = getClientId()
           if (payload.clientId && currentClientId && payload.clientId === currentClientId) {
             return
-          }
-
-          // Check if payload is scoped to a specific user
-          const authStore = useAuthStore()
-          const currentUserIdentifier = authStore.user?.email || authStore.user?.id || 'guest-default'
-          if (payload.userIdentifier) {
-            const cleanCurrent = currentUserIdentifier.trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_')
-            const cleanPayloadUser = payload.userIdentifier.trim().toLowerCase().replace(/[^a-z0-9@._-]/g, '_')
-            if (cleanPayloadUser !== cleanCurrent) {
-              return // Event belongs to a different user
-            }
           }
 
           const taskStore = useTaskStore()

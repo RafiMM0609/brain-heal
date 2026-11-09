@@ -1,45 +1,44 @@
-import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
+import { requireSession, getUserRedisKey } from '~/server/utils/auth'
+import { REDIS_KEYS } from '~/server/utils/redis'
+import { patchCollectionItem } from '~/server/utils/store'
 import { syncBus } from '~/server/utils/bus'
 import type { DistractionItem } from '~/types/focus'
 
+const MAX_CONTENT_LENGTH = 2000
+
 export default defineEventHandler(async (event) => {
-  const userIdentifier = getAuthUserIdentifier(event)
-  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.DISTRACTIONS)
+  const { user } = await requireSession(event)
+  const key = getUserRedisKey(user.id, REDIS_KEYS.DISTRACTIONS)
   const id = getRouterParam(event, 'id')
   if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Distraction ID parameter is required.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Distraction ID parameter is required.' })
   }
 
   const body = await readBody<{ convertedToTask?: boolean; content?: string }>(event)
-  const { data: currentDistractions } = await redisGet<DistractionItem[]>(key)
-  const distractionList = currentDistractions || []
 
-  const index = distractionList.findIndex(d => d.id === id)
-  if (index === -1) {
-    throw createError({
-      statusCode: 404,
-      statusMessage: `Distraction with ID ${id} not found.`
-    })
+  if (body?.content !== undefined) {
+    if (typeof body.content !== 'string') {
+      throw createError({ statusCode: 400, statusMessage: 'Invalid content.' })
+    }
+    if (body.content.length > MAX_CONTENT_LENGTH) {
+      throw createError({ statusCode: 400, statusMessage: 'Distraction content is too long.' })
+    }
+  }
+  if (body?.convertedToTask !== undefined && typeof body.convertedToTask !== 'boolean') {
+    throw createError({ statusCode: 400, statusMessage: 'Invalid convertedToTask value.' })
   }
 
-  const existing = distractionList[index]
-  const updatedItem: DistractionItem = {
-    ...existing,
-    ...(body.content !== undefined ? { content: body.content.trim() } : {}),
-    ...(body.convertedToTask !== undefined ? { convertedToTask: body.convertedToTask } : {})
+  const updatedItem = await patchCollectionItem<DistractionItem>(key, id, (current) => ({
+    ...current,
+    ...(body?.content !== undefined ? { content: body.content.trim() } : {}),
+    ...(body?.convertedToTask !== undefined ? { convertedToTask: body.convertedToTask } : {})
+  }))
+
+  if (!updatedItem) {
+    throw createError({ statusCode: 404, statusMessage: 'Distraction not found.' })
   }
 
-  distractionList[index] = updatedItem
-  await redisSet(key, distractionList)
+  syncBus.emitSync(event, 'distractions', 'update', user.id)
 
-  // Broadcast sync event to all connected clients
-  syncBus.emitSync('distractions', 'update', userIdentifier)
-
-  return {
-    distraction: updatedItem,
-    distractions: distractionList
-  }
+  return { distraction: updatedItem }
 })

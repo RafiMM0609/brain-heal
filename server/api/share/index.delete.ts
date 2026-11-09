@@ -1,17 +1,19 @@
-import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
+import { requireSession, getUserRedisKey } from '~/server/utils/auth'
+import { REDIS_KEYS, redisDel } from '~/server/utils/redis'
+import { deleteCollectionItem, hashGet } from '~/server/utils/store'
 import { syncBus } from '~/server/utils/bus'
 import type { ShareItem } from './index.get'
 
 export default defineEventHandler(async (event) => {
-  const userIdentifier = getAuthUserIdentifier(event)
-  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.SHARE)
+  const { user } = await requireSession(event)
+  const key = getUserRedisKey(user.id, REDIS_KEYS.SHARE)
   const query = getQuery(event)
-  const id = query.id as string | undefined
+  const id = typeof query.id === 'string' ? query.id : undefined
   const clear = query.clear === 'true'
 
   if (clear) {
-    await redisSet(key, [])
-    syncBus.emitSync('share', 'delete', userIdentifier)
+    await redisDel(key)
+    syncBus.emitSync(event, 'share', 'delete', user.id)
     return { success: true, cleared: true }
   }
 
@@ -22,13 +24,13 @@ export default defineEventHandler(async (event) => {
     })
   }
 
-  const { data: existingItems } = await redisGet<ShareItem[]>(key)
-  const currentItems = Array.isArray(existingItems) ? existingItems : []
+  const existing = await hashGet<ShareItem>(key, id)
+  if (!existing) {
+    throw createError({ statusCode: 404, statusMessage: 'Share item not found.' })
+  }
 
-  const updatedItems = currentItems.filter((item) => item.id !== id)
-  await redisSet(key, updatedItems)
-
-  syncBus.emitSync('share', 'delete', userIdentifier)
+  await deleteCollectionItem(key, id)
+  syncBus.emitSync(event, 'share', 'delete', user.id)
 
   return { success: true, deletedId: id }
 })

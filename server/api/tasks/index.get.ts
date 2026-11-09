@@ -1,22 +1,23 @@
-import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey, DEFAULT_TASKS } from '~/server/utils/redis'
+import { requireSession, getUserRedisKey } from '~/server/utils/auth'
+import { REDIS_KEYS, redisGet, DEFAULT_TASKS } from '~/server/utils/redis'
+import { listCollection, putCollectionItem, hashLen } from '~/server/utils/store'
 import type { TaskItem } from '~/types/task'
 
 export default defineEventHandler(async (event) => {
-  const userIdentifier = getAuthUserIdentifier(event)
-  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.TASKS)
-  const { data: tasks, isFallback } = await redisGet<TaskItem[]>(key)
+  const { user } = await requireSession(event)
+  const key = getUserRedisKey(user.id, REDIS_KEYS.TASKS)
 
-  // If key has never been written for this user: initialize and persist DEFAULT_TASKS in Upstash
-  if (tasks === null || tasks === undefined) {
-    await redisSet(key, DEFAULT_TASKS)
-    return {
-      tasks: DEFAULT_TASKS,
-      isFallback
-    }
+  let tasks = await listCollection<TaskItem>(key, async () => {
+    const { data } = await redisGet<TaskItem[]>(key)
+    return data
+  })
+
+  // First visit for this tenant: seed the demo list. Uses per-item atomic
+  // writes so a concurrent request cannot clobber a partially written list.
+  if (tasks.length === 0 && (await hashLen(key)) === 0) {
+    await Promise.all(DEFAULT_TASKS.map((task) => putCollectionItem(key, task)))
+    tasks = DEFAULT_TASKS
   }
 
-  return {
-    tasks: Array.isArray(tasks) ? tasks : [],
-    isFallback
-  }
+  return { tasks }
 })

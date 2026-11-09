@@ -1,29 +1,24 @@
-import { REDIS_KEYS, redisGet, redisSet, getAuthUserIdentifier, getUserRedisKey } from '~/server/utils/redis'
+import { requireSession, getUserRedisKey } from '~/server/utils/auth'
+import { REDIS_KEYS } from '~/server/utils/redis'
+import { deleteCollectionItem, hashGet } from '~/server/utils/store'
 import { syncBus } from '~/server/utils/bus'
 import type { DistractionItem } from '~/types/focus'
 
 export default defineEventHandler(async (event) => {
-  const userIdentifier = getAuthUserIdentifier(event)
-  const key = getUserRedisKey(userIdentifier, REDIS_KEYS.DISTRACTIONS)
+  const { user } = await requireSession(event)
+  const key = getUserRedisKey(user.id, REDIS_KEYS.DISTRACTIONS)
   const id = getRouterParam(event, 'id')
-
   if (!id) {
-    throw createError({
-      statusCode: 400,
-      statusMessage: 'Distraction ID parameter is required.'
-    })
+    throw createError({ statusCode: 400, statusMessage: 'Distraction ID parameter is required.' })
   }
 
-  const { data: currentDistractions } = await redisGet<DistractionItem[]>(key)
-  const distractionList = currentDistractions || []
-  const updatedList = distractionList.filter(d => d.id !== id)
-
-  await redisSet(key, updatedList)
-  syncBus.emitSync('distractions', 'delete', userIdentifier)
-
-  return {
-    success: true,
-    id,
-    distractions: updatedList
+  const existing = await hashGet<DistractionItem>(key, id)
+  if (!existing) {
+    throw createError({ statusCode: 404, statusMessage: 'Distraction not found.' })
   }
+
+  await deleteCollectionItem(key, id)
+  syncBus.emitSync(event, 'distractions', 'delete', user.id)
+
+  return { success: true, id }
 })
