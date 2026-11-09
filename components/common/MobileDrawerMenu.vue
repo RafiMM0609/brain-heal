@@ -96,6 +96,136 @@ function isLinkActive(path: string): boolean {
   if (path === '/') return route.path === '/'
   return route.path.startsWith(path)
 }
+
+/**
+ * Swipe-to-close.
+ *
+ * Spatial consistency: the drawer enters from the left edge, so it must leave
+ * the same way. This reverses the entrance rather than inventing a new axis,
+ * which is what makes the gesture discoverable without an instruction.
+ *
+ * Track phase is 1:1 on the element's own transform; release is decided by
+ * distance OR velocity, and an un-dismissed drag snaps back fast.
+ */
+const drawerRef = ref<HTMLElement | null>(null)
+
+const DISTANCE_RATIO = 0.4
+const VELOCITY_THRESHOLD = 0.5
+const SNAP_MS = 180
+const EXIT_MS = 200
+const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+let exitTimer: ReturnType<typeof setTimeout> | null = null
+
+const swipe = {
+  active: false,
+  pointerId: null as number | null,
+  startX: 0,
+  x: 0,
+  lastX: 0,
+  lastT: 0,
+  velocity: 0
+}
+
+let drawerWidth = 320
+
+function paintDrawer(x: number, transition: string) {
+  const el = drawerRef.value
+  if (!el) return
+  el.style.transition = transition
+  el.style.transform = x === 0 ? '' : `translateX(${x}px)`
+}
+
+function onDrawerPointerDown(e: PointerEvent) {
+  const el = drawerRef.value
+  if (!el) return
+
+  // A press on a link or button is a tap; only start a drag from dead space.
+  const target = e.target as HTMLElement | null
+  if (target?.closest('button, a, input, textarea, select, [role="button"]')) return
+
+  drawerWidth = el.offsetWidth || 320
+
+  swipe.active = true
+  swipe.pointerId = e.pointerId
+  swipe.startX = e.clientX
+  swipe.x = 0
+  swipe.lastX = e.clientX
+  swipe.lastT = e.timeStamp
+  swipe.velocity = 0
+
+  el.classList.add('gesture-tracking')
+}
+
+function onDrawerPointerMove(e: PointerEvent) {
+  if (!swipe.active || e.pointerId !== swipe.pointerId) return
+
+  const dt = e.timeStamp - swipe.lastT
+  if (dt > 0) swipe.velocity = (e.clientX - swipe.lastX) / dt
+  swipe.lastX = e.clientX
+  swipe.lastT = e.timeStamp
+
+  // Leftward closes; rightward rubber-bands at a fraction of the distance so
+  // the edge reads as a wall rather than a hard stop.
+  const dx = e.clientX - swipe.startX
+  swipe.x = dx < 0 ? dx : dx * 0.2
+
+  paintDrawer(swipe.x, 'none')
+}
+
+function onDrawerPointerUp(e: PointerEvent) {
+  if (!swipe.active || e.pointerId !== swipe.pointerId) return
+
+  swipe.active = false
+  swipe.pointerId = null
+
+  const el = drawerRef.value
+  el?.classList.remove('gesture-tracking')
+
+  const passedDistance = swipe.x < -drawerWidth * DISTANCE_RATIO
+  const flung = swipe.velocity < -VELOCITY_THRESHOLD && swipe.x < -24
+
+  if (passedDistance || flung) {
+    /*
+     * Finish the slide-out inline, then close. The drawer still carries an
+     * inline `transition` from the track phase, which outranks the
+     * `.drawer-leave-*` class, so closing immediately would make it vanish
+     * instead of sliding.
+     */
+    paintDrawer(-(drawerWidth || 320), `transform ${EXIT_MS}ms ${EASE_OUT}`)
+    if (exitTimer !== null) clearTimeout(exitTimer)
+    exitTimer = setTimeout(() => {
+      exitTimer = null
+      handleClose()
+    }, EXIT_MS)
+    swipe.x = 0
+  } else {
+    paintDrawer(0, `transform ${SNAP_MS}ms ${EASE_OUT}`)
+    swipe.x = 0
+  }
+}
+
+onUnmounted(() => {
+  if (exitTimer !== null) {
+    clearTimeout(exitTimer)
+    exitTimer = null
+  }
+})
+
+function resetDrawerTransform() {
+  const el = drawerRef.value
+  if (!el) return
+  el.classList.remove('gesture-tracking')
+  el.style.transition = ''
+  el.style.transform = ''
+  swipe.active = false
+  swipe.pointerId = null
+  swipe.x = 0
+}
+
+watch(() => props.isOpen, (open) => {
+  if (!open) nextTick(resetDrawerTransform)
+})
 </script>
 
 <template>
@@ -119,19 +249,20 @@ function isLinkActive(path: string): boolean {
 
     <!-- Mobile Drawer Content -->
     <Transition
-      enter-active-class="transition-transform duration-300 cubic-bezier(0.16, 1, 0.3, 1)"
-      enter-from-class="-translate-x-full"
-      enter-to-class="translate-x-0"
-      leave-active-class="transition-transform duration-250 ease-in"
-      leave-from-class="translate-x-0"
-      leave-to-class="-translate-x-full"
+      name="drawer"
     >
       <div
         v-if="isOpen"
-        class="fixed inset-y-0 left-0 z-[101] w-[85vw] max-w-sm bg-surface-bright/95 backdrop-blur-2xl border-r border-surface-variant/80 shadow-2xl flex flex-col pt-safe pb-safe md:hidden select-none overflow-hidden"
+        class="fixed inset-y-0 left-0 z-[101] w-[85vw] max-w-sm bg-surface-bright/95 backdrop-blur-2xl border-r border-surface-variant/80 shadow-2xl flex flex-col pt-safe pb-safe md:hidden select-none overflow-hidden touch-pan-y"
+        ref="drawerRef"
         role="dialog"
         aria-modal="true"
         aria-label="Mobile Navigation Menu"
+        data-drawer-drag-handle
+        @pointerdown="onDrawerPointerDown"
+        @pointermove="onDrawerPointerMove"
+        @pointerup="onDrawerPointerUp"
+        @pointercancel="onDrawerPointerUp"
       >
         <!-- Header & Close Button -->
         <div class="flex items-center justify-between px-5 py-4 border-b border-surface-variant/60">
@@ -299,3 +430,33 @@ function isLinkActive(path: string): boolean {
     </Transition>
   </Teleport>
 </template>
+
+<style scoped>
+/**
+ * The drawer's transition previously pointed at two classes Tailwind can never
+ * generate — `duration-250` (not a step in the scale) and a bare
+ * `cubic-bezier(...)` as a class name — so the enter animation silently fell
+ * back to `transition-transform` at its default timing. Declaring the motion
+ * here is both correct and predictable.
+ *
+ * It is a transition, not a keyframe: the drawer can be grabbed mid-flight and
+ * dragged back, and only a transition survives that interruption.
+ */
+.drawer-enter-active {
+  transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.drawer-leave-active {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 1, 1);
+}
+
+.drawer-enter-from,
+.drawer-leave-to {
+  transform: translateX(-100%);
+}
+
+.drawer-enter-to,
+.drawer-leave-from {
+  transform: translateX(0);
+}
+</style>

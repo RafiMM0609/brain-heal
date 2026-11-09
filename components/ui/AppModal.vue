@@ -23,6 +23,156 @@ function handleClose() {
   emit('close')
 }
 
+/**
+ * Drag-to-dismiss for the mobile bottom sheet.
+ *
+ * The handle at the top of the sheet was purely decorative before: it invited a
+ * swipe that did nothing. Two phases, as any gesture needs:
+ *
+ *  - TRACK: the sheet's translateY maps 1:1 to the finger, written straight to
+ *    the element (no transition, no reactive state per move).
+ *  - RELEASE: distance OR velocity decides. A fast flick over a short distance
+ *    dismisses; so does a slow drag past 40% of the sheet. Below the threshold
+ *    it snaps back fast, because a slow snap-back reads as the UI disagreeing
+ *    with you.
+ *
+ * Desktop is unaffected: the handle is `sm:hidden`, so the gesture only exists
+ * on the sheet layout.
+ */
+const DISTANCE_RATIO = 0.4
+const VELOCITY_THRESHOLD = 0.5
+const SNAP_MS = 180
+const EXIT_MS = 220
+const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+const drag = {
+  active: false,
+  pointerId: null as number | null,
+  startY: 0,
+  y: 0,
+  lastY: 0,
+  lastT: 0,
+  velocity: 0
+}
+
+let sheetHeight = 0
+
+function sheetEl(): HTMLElement | null {
+  return dialogRef.value
+}
+
+function paintSheet(y: number, transition: string) {
+  const el = sheetEl()
+  if (!el) return
+  el.style.transition = transition
+  el.style.transform = y === 0 ? '' : `translateY(${y}px)`
+}
+
+function onSheetPointerDown(e: PointerEvent) {
+  const el = sheetEl()
+  if (!el) return
+
+  // Only from the handle / header region, so content stays scrollable.
+  const target = e.target as HTMLElement | null
+  if (!target?.closest('[data-sheet-drag-handle]')) return
+
+  drag.active = true
+  drag.pointerId = e.pointerId
+  drag.startY = e.clientY
+  drag.y = 0
+  drag.lastY = e.clientY
+  drag.lastT = e.timeStamp
+  drag.velocity = 0
+
+  sheetHeight = el.offsetHeight || 400
+  el.classList.add('gesture-tracking')
+
+  try {
+    el.setPointerCapture(e.pointerId)
+  } catch {
+    // Pointer capture is an optimisation; the drag still works without it.
+  }
+}
+
+function onSheetPointerMove(e: PointerEvent) {
+  if (!drag.active || e.pointerId !== drag.pointerId) return
+
+  const dy = e.clientY - drag.startY
+  const dt = e.timeStamp - drag.lastT
+  if (dt > 0) drag.velocity = (e.clientY - drag.lastY) / dt
+  drag.lastY = e.clientY
+  drag.lastT = e.timeStamp
+
+  // Downward only, damped past the sheet's own height: dragging up should not
+  // lift a bottom sheet off the bottom of the screen.
+  drag.y = dy >= 0 ? dy : dy * 0.2
+
+  paintSheet(drag.y, 'none')
+}
+
+function onSheetPointerUp(e: PointerEvent) {
+  if (!drag.active || e.pointerId !== drag.pointerId) return
+
+  drag.active = false
+  drag.pointerId = null
+
+  const el = sheetEl()
+  el?.classList.remove('gesture-tracking')
+  try {
+    el?.releasePointerCapture(e.pointerId)
+  } catch {
+    // Already released.
+  }
+
+  const passedDistance = drag.y > sheetHeight * DISTANCE_RATIO
+  const flung = drag.velocity > VELOCITY_THRESHOLD && drag.y > 24
+
+  if (passedDistance || flung) {
+    /*
+     * Continue the motion instead of handing over to the class-based leave
+     * transition. The element still carries an inline `transition: none` from
+     * the track phase, and an inline style outranks `.sheet-leave-*`, so
+     * flipping `isOpen` here would make the sheet vanish instantly. Finishing
+     * the exit inline and closing once it is off screen keeps the motion
+     * continuous — the same rule the swipe card follows.
+     */
+    paintSheet(sheetHeight || 400, `transform ${EXIT_MS}ms ${EASE_OUT}`)
+    emitCloseAfterExit()
+    drag.y = 0
+  } else {
+    paintSheet(0, `transform ${SNAP_MS}ms ${EASE_OUT}`)
+    drag.y = 0
+  }
+}
+
+let closeTimer: ReturnType<typeof setTimeout> | null = null
+
+function emitCloseAfterExit() {
+  if (closeTimer !== null) clearTimeout(closeTimer)
+  closeTimer = setTimeout(() => {
+    closeTimer = null
+    handleClose()
+  }, EXIT_MS)
+}
+
+onUnmounted(() => {
+  if (closeTimer !== null) {
+    clearTimeout(closeTimer)
+    closeTimer = null
+  }
+})
+
+function resetSheetTransform() {
+  const el = sheetEl()
+  if (!el) return
+  el.classList.remove('gesture-tracking')
+  el.style.transition = ''
+  el.style.transform = ''
+  drag.active = false
+  drag.pointerId = null
+  drag.y = 0
+}
+
 const keyboardHeight = ref(0)
 const maxModalHeight = ref<string | undefined>(undefined)
 
@@ -164,7 +314,11 @@ watch(
   () => props.isOpen,
   (newVal) => {
     if (newVal) activateModal()
-    else deactivateModal()
+    else {
+      deactivateModal()
+      // The dragged offset must not survive into the next opening.
+      nextTick(resetSheetTransform)
+    }
   }
 )
 </script>
@@ -185,14 +339,28 @@ watch(
             aria-modal="true"
             :aria-labelledby="title ? 'modal-title' : undefined"
             tabindex="-1"
-            class="bg-surface rounded-t-2xl sm:rounded-xl border border-surface-variant shadow-2xl max-w-lg w-full overflow-hidden flex flex-col transform transition-all pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:pb-0 max-h-[90vh] sm:max-h-[80vh] outline-none"
+            @pointerdown="onSheetPointerDown"
+            @pointermove="onSheetPointerMove"
+            @pointerup="onSheetPointerUp"
+            @pointercancel="onSheetPointerUp"
+            class="bg-surface rounded-t-2xl sm:rounded-xl border border-surface-variant shadow-2xl max-w-lg w-full overflow-hidden flex flex-col transform transition-all pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:pb-0 max-h-[90dvh] sm:max-h-[80dvh] outline-none"
             :style="{ maxHeight: maxModalHeight }"
           >
             <!-- Mobile Bottom Sheet Drag Handle -->
-            <div class="w-12 h-1.5 bg-outline/30 rounded-full mx-auto my-2 block sm:hidden shrink-0" aria-hidden="true" />
+            <div
+              data-sheet-drag-handle
+              class="w-full pt-2 pb-1 flex items-center justify-center block sm:hidden shrink-0 touch-lock cursor-grab active:cursor-grabbing"
+              aria-hidden="true"
+            >
+              <div class="w-12 h-1.5 bg-outline/30 rounded-full" />
+            </div>
 
             <!-- Header -->
-            <div v-if="title || $slots.header" class="flex justify-between items-center gap-3 px-5 sm:px-6 py-3 sm:py-4 border-b border-surface-variant shrink-0">
+            <div
+              v-if="title || $slots.header"
+              data-sheet-drag-handle
+              class="flex justify-between items-center gap-3 px-5 sm:px-6 py-3 sm:py-4 border-b border-surface-variant shrink-0"
+            >
               <h3 v-if="title" id="modal-title" class="text-headline-md font-semibold text-primary">
                 {{ title }}
               </h3>
@@ -223,9 +391,21 @@ watch(
 </template>
 
 <style scoped>
+/**
+ * The open/close motion is a transition, never a keyframe: a gesture can grab
+ * the sheet mid-flight and drag it back, and only a transition (or a spring)
+ * survives being interrupted. The curve is the iOS sheet family — steep at the
+ * start, gentle on the settle.
+ */
 .sheet-enter-active,
 .sheet-leave-active {
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.25s cubic-bezier(0.32, 0.72, 0, 1),
+    transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+/* Leaving fast: the user just dismissed it, so don't make them wait. */
+.sheet-leave-active {
+  transition-duration: 0.2s;
 }
 
 .sheet-enter-from,

@@ -48,6 +48,128 @@ async function runAction() {
   hideToast()
   await action.run()
 }
+
+/**
+ * Swipe-to-dismiss.
+ *
+ * Spatial consistency: the toast slides in from the top, so it must be swiped
+ * *up* to dismiss. Enter and exit share one axis, which is what makes the
+ * gesture felt rather than learned.
+ *
+ * Track phase is 1:1 on the element's transform; release decides on distance OR
+ * velocity, and a drag that falls short snaps back fast.
+ */
+const toastRef = ref<HTMLElement | null>(null)
+
+const DISMISS_DISTANCE = 48
+const VELOCITY_THRESHOLD = 0.4
+const SNAP_MS = 160
+const EXIT_MS = 180
+const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+let exitTimer: ReturnType<typeof setTimeout> | null = null
+
+const swipe = {
+  active: false,
+  pointerId: null as number | null,
+  startY: 0,
+  y: 0,
+  lastY: 0,
+  lastT: 0,
+  velocity: 0
+}
+
+function paintToast(y: number, transition: string) {
+  const el = toastRef.value
+  if (!el) return
+  el.style.transition = transition
+  // `translate(-50%, ...)` must carry the centring, or writing a transform here
+  // would drop the `-translate-x-1/2` utility and the toast would jump right.
+  el.style.transform = `translate3d(-50%, ${y}px, 0)`
+  el.style.opacity = String(Math.max(0, 1 - Math.abs(y) / 120))
+}
+
+function resetToastTransform() {
+  const el = toastRef.value
+  if (!el) return
+  el.classList.remove('gesture-tracking')
+  el.style.transition = ''
+  el.style.transform = ''
+  el.style.opacity = ''
+  swipe.active = false
+  swipe.pointerId = null
+  swipe.y = 0
+}
+
+watch(
+  () => toast.value?.id,
+  () => resetToastTransform()
+)
+
+function onToastPointerDown(e: PointerEvent) {
+  const el = toastRef.value
+  if (!el) return
+
+  // A press on the action or close button is a tap, not a drag.
+  const target = e.target as HTMLElement | null
+  if (target?.closest('button, a, [role="button"]')) return
+
+  swipe.active = true
+  swipe.pointerId = e.pointerId
+  swipe.startY = e.clientY
+  swipe.y = 0
+  swipe.lastY = e.clientY
+  swipe.lastT = e.timeStamp
+  swipe.velocity = 0
+
+  el.classList.add('gesture-tracking')
+}
+
+function onToastPointerMove(e: PointerEvent) {
+  if (!swipe.active || e.pointerId !== swipe.pointerId) return
+
+  const dt = e.timeStamp - swipe.lastT
+  if (dt > 0) swipe.velocity = (e.clientY - swipe.lastY) / dt
+  swipe.lastY = e.clientY
+  swipe.lastT = e.timeStamp
+
+  swipe.y = e.clientY - swipe.startY
+  paintToast(swipe.y, 'none')
+}
+
+function onToastPointerUp(e: PointerEvent) {
+  if (!swipe.active || e.pointerId !== swipe.pointerId) return
+
+  swipe.active = false
+  swipe.pointerId = null
+  toastRef.value?.classList.remove('gesture-tracking')
+
+  // The toast entered from above, so only an upward drag dismisses it.
+  const up = -swipe.y
+  if (up > DISMISS_DISTANCE || -swipe.velocity > VELOCITY_THRESHOLD) {
+    /*
+     * Finish the exit inline, then hide. The element still has an inline
+     * `transition` from the track phase, which outranks the class-based leave
+     * transition — hiding immediately would make it disappear mid-flick.
+     */
+    paintToast(-140, `transform ${EXIT_MS}ms ${EASE_OUT}, opacity ${EXIT_MS}ms ease-out`)
+    if (exitTimer !== null) clearTimeout(exitTimer)
+    exitTimer = setTimeout(() => {
+      exitTimer = null
+      hideToast()
+    }, EXIT_MS)
+  } else {
+    paintToast(0, `transform ${SNAP_MS}ms ${EASE_OUT}, opacity ${SNAP_MS}ms ease-out`)
+  }
+  swipe.y = 0
+}
+
+onUnmounted(() => {
+  if (exitTimer !== null) {
+    clearTimeout(exitTimer)
+    exitTimer = null
+  }
+})
 </script>
 
 <template>
@@ -63,7 +185,12 @@ async function runAction() {
       >
         <div
           v-if="toast"
-          class="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] max-w-[92vw] sm:max-w-lg w-auto px-4 sm:px-5 py-3 bg-slate-900/95 text-slate-100 rounded-2xl shadow-2xl border backdrop-blur-md flex items-center gap-3 select-none"
+          ref="toastRef"
+          @pointerdown="onToastPointerDown"
+          @pointermove="onToastPointerMove"
+          @pointerup="onToastPointerUp"
+          @pointercancel="onToastPointerUp"
+          class="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] max-w-[92vw] sm:max-w-lg w-auto px-4 sm:px-5 py-3 bg-slate-900/95 text-slate-100 rounded-2xl shadow-2xl border backdrop-blur-md flex items-center gap-3 gesture-surface touch-lock"
           :class="variant.border"
           :role="toast.type === 'error' ? 'alert' : 'status'"
           aria-live="polite"

@@ -24,95 +24,216 @@ function handleQuickAdd() {
   }
 }
 
-// Swipe pointer gesture state
-const pointerId = ref<number | null>(null)
-const startX = ref(0)
-const startY = ref(0)
-const currentX = ref(0)
-const currentY = ref(0)
-const isSwiping = ref(false)
+/**
+ * Swipe gesture.
+ *
+ * Two phases, and mixing them up is what makes a card feel wrong:
+ *
+ *  - TRACK (pointer down): position maps 1:1 to the finger. `transform` is
+ *    written straight to the element, and the directional overlays read that
+ *    same value, so nothing is eased and the component never re-renders per
+ *    move event.
+ *  - RELEASE (pointer up): physics finishes the motion. The card leaves in the
+ *    direction it was thrown, and the move is only committed once it is off
+ *    screen — committing first makes the new card appear mid-flight.
+ */
+const cardRef = ref<HTMLElement | null>(null)
+const doFirstOverlayRef = ref<HTMLElement | null>(null)
+const delegateOverlayRef = ref<HTMLElement | null>(null)
 
 const activeTask = computed<TaskItem | undefined>(() => taskStore.rawInbox[0])
 
-const cardStyle = computed(() => {
-  if (!isSwiping.value && currentX.value === 0) {
-    return {
-      transform: 'translate3d(0, 0, 0) rotate(0deg)',
-      transition: 'transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)'
-    }
-  }
-  const rotation = currentX.value * 0.08
-  return {
-    transform: `translate3d(${currentX.value}px, ${currentY.value * 0.3}px, 0) rotate(${rotation}deg)`,
-    transition: isSwiping.value ? 'none' : 'transform 0.3s ease-out'
-  }
-})
+/**
+ * Gesture state deliberately lives outside Vue's reactivity: a reactive write
+ * on every `pointermove` re-renders the component and drops frames.
+ */
+const gesture = {
+  active: false,
+  pointerId: null as number | null,
+  startX: 0,
+  startY: 0,
+  x: 0,
+  y: 0,
+  moved: false,
+  lastX: 0,
+  lastT: 0,
+  velocity: 0 // px/ms, from the most recent sample
+}
 
-const rightSwipeOpacity = computed(() => {
-  return Math.min(1, Math.max(0, currentX.value / 90))
-})
+/** Resolved per drag so the threshold scales with the actual card on screen. */
+let cardWidth = 320
 
-const leftSwipeOpacity = computed(() => {
-  return Math.min(1, Math.max(0, -currentX.value / 90))
-})
+/** Dismiss after ~32% of the card's travel... */
+const DISTANCE_RATIO = 0.32
+/** ...or on a fast flick over a short distance, otherwise flicks feel ignored. */
+const VELOCITY_THRESHOLD = 0.5
+const EXIT_MS = 220
+const SNAP_MS = 180
+const EASE_OUT = 'cubic-bezier(0.22, 1, 0.36, 1)'
+
+let exitTimer: ReturnType<typeof setTimeout> | null = null
+
+function clearExitTimer() {
+  if (exitTimer !== null) {
+    clearTimeout(exitTimer)
+    exitTimer = null
+  }
+}
+
+/**
+ * Single source of truth for the card and both overlays. Deriving the overlay
+ * opacity from the same `x` means the tint is always exactly as strong as the
+ * card is far through its travel — including mid-gesture and when the finger
+ * reverses.
+ */
+function paint(x: number, y: number, transition: string) {
+  const el = cardRef.value
+  if (!el) return
+
+  el.style.transition = transition
+  el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${x * 0.06}deg)`
+
+  // Normalised against the dismiss threshold, so the overlay reaches full
+  // strength exactly when letting go would commit the move.
+  const travel = Math.max(1, cardWidth * DISTANCE_RATIO)
+  const progress = Math.max(-1, Math.min(1, x / travel))
+
+  if (doFirstOverlayRef.value) {
+    doFirstOverlayRef.value.style.opacity = String(Math.max(0, progress))
+  }
+  if (delegateOverlayRef.value) {
+    delegateOverlayRef.value.style.opacity = String(Math.max(0, -progress))
+  }
+}
 
 function onPointerDown(e: PointerEvent) {
   if (!activeTask.value) return
-  isSwiping.value = true
-  pointerId.value = e.pointerId
-  startX.value = e.clientX
-  startY.value = e.clientY
-  
-  const el = e.currentTarget as HTMLElement | null
-  if (el && typeof el.setPointerCapture === 'function') {
-    try {
-      el.setPointerCapture(e.pointerId)
-    } catch {
-      // Fallback ignore
-    }
+
+  // A press that starts on a control inside the card is a tap, not a drag.
+  const target = e.target as HTMLElement | null
+  if (target?.closest('button, a, input, textarea, select, [role="button"]')) return
+
+  const el = cardRef.value
+  if (!el) return
+
+  clearExitTimer()
+  cardWidth = el.offsetWidth || 320
+
+  gesture.active = true
+  gesture.pointerId = e.pointerId
+  gesture.startX = e.clientX
+  gesture.startY = e.clientY
+  gesture.x = 0
+  gesture.y = 0
+  gesture.moved = false
+  gesture.lastX = e.clientX
+  gesture.lastT = e.timeStamp
+  gesture.velocity = 0
+
+  // No transition while the finger owns the position.
+  el.classList.add('gesture-tracking')
+
+  try {
+    el.setPointerCapture(e.pointerId)
+  } catch {
+    // Pointer capture is an optimisation; the drag still works without it.
   }
 }
 
 function onPointerMove(e: PointerEvent) {
-  if (!isSwiping.value || e.pointerId !== pointerId.value) return
-  currentX.value = e.clientX - startX.value
-  currentY.value = e.clientY - startY.value
+  if (!gesture.active || e.pointerId !== gesture.pointerId) return
+
+  const dx = e.clientX - gesture.startX
+  const dy = e.clientY - gesture.startY
+
+  if (!gesture.moved && (Math.abs(dx) > 4 || Math.abs(dy) > 4)) {
+    gesture.moved = true
+  }
+
+  const dt = e.timeStamp - gesture.lastT
+  if (dt > 0) gesture.velocity = (e.clientX - gesture.lastX) / dt
+  gesture.lastX = e.clientX
+  gesture.lastT = e.timeStamp
+
+  gesture.x = dx
+  // Vertical travel is damped: this is a horizontal decision, so the card
+  // follows the finger with resistance instead of travelling 1:1.
+  gesture.y = dy * 0.3
+
+  paint(gesture.x, gesture.y, 'none')
 }
 
 function onPointerUp(e: PointerEvent) {
-  if (!isSwiping.value || e.pointerId !== pointerId.value) return
-  isSwiping.value = false
-  pointerId.value = null
+  if (!gesture.active || e.pointerId !== gesture.pointerId) return
 
-  const el = e.currentTarget as HTMLElement | null
-  if (el && typeof el.releasePointerCapture === 'function') {
-    try {
-      el.releasePointerCapture(e.pointerId)
-    } catch {
-      // Fallback ignore
-    }
+  gesture.active = false
+  gesture.pointerId = null
+
+  const el = cardRef.value
+  el?.classList.remove('gesture-tracking')
+
+  try {
+    el?.releasePointerCapture(e.pointerId)
+  } catch {
+    // Already released.
   }
 
-  const threshold = 80
-  if (currentX.value > threshold) {
-    // Swipe Right -> Do First
-    assignQuadrant('do-first')
-  } else if (currentX.value < -threshold) {
-    // Swipe Left -> Delegate
-    assignQuadrant('delegate')
-  } else {
-    // Reset position
-    currentX.value = 0
-    currentY.value = 0
-  }
+  const committed = decide()
+  if (committed) flyOut(committed)
+  else snapBack()
 }
 
-function assignQuadrant(quadrant: QuadrantType) {
+/** Dismiss on distance OR velocity, in the direction the card was pushed. */
+function decide(): QuadrantType | null {
+  const { x, velocity } = gesture
+  const distance = cardWidth * DISTANCE_RATIO
+
+  if (x > 0 && (x > distance || velocity > VELOCITY_THRESHOLD)) return 'do-first'
+  if (x < 0 && (x < -distance || velocity < -VELOCITY_THRESHOLD)) return 'delegate'
+  return null
+}
+
+/** The card is thrown off screen, then the store updates behind it. */
+function flyOut(quadrant: QuadrantType) {
+  const direction = quadrant === 'do-first' ? 1 : -1
+  const exitX = direction * (typeof window !== 'undefined' ? window.innerWidth : 420)
+
+  paint(exitX, gesture.y, `transform ${EXIT_MS}ms ${EASE_OUT}`)
+
+  clearExitTimer()
+  exitTimer = setTimeout(() => {
+    exitTimer = null
+    commit(quadrant)
+    reset()
+  }, EXIT_MS)
+}
+
+/** Fast, not slow: a lingering snap-back reads as the UI arguing with you. */
+function snapBack() {
+  paint(0, 0, `transform ${SNAP_MS}ms ${EASE_OUT}`)
+
+  gesture.x = 0
+  gesture.y = 0
+  gesture.velocity = 0
+  gesture.moved = false
+}
+
+function reset() {
+  clearExitTimer()
+  gesture.active = false
+  gesture.pointerId = null
+  gesture.x = 0
+  gesture.y = 0
+  gesture.velocity = 0
+  gesture.moved = false
+  paint(0, 0, 'none')
+}
+
+function commit(quadrant: QuadrantType) {
   if (!activeTask.value) return
+
   const taskId = activeTask.value.id
   const taskTitle = activeTask.value.title
-  currentX.value = 0
-  currentY.value = 0
   taskStore.moveTask(taskId, quadrant)
 
   if (typeof navigator !== 'undefined' && 'vibrate' in navigator) {
@@ -120,6 +241,15 @@ function assignQuadrant(quadrant: QuadrantType) {
   }
 
   showToast(`Moved “${taskTitle.length > 24 ? taskTitle.slice(0, 24) + '…' : taskTitle}” to ${quadrantLabel(quadrant)}`)
+}
+
+/**
+ * Button path. No force was applied, so there is no bounce and no fly-out —
+ * the move commits immediately.
+ */
+function assignQuadrant(quadrant: QuadrantType) {
+  commit(quadrant)
+  reset()
 }
 
 const QUADRANT_LABELS: Record<QuadrantType, string> = {
@@ -144,10 +274,12 @@ function startFocus() {
 }
 
 function handleCardClick() {
-  if (activeTask.value && Math.abs(currentX.value) < 10) {
-    openTaskDetail(activeTask.value)
-  }
+  // A swipe that happened to end near the origin is still a swipe, not a tap.
+  if (gesture.moved) return
+  if (activeTask.value) openTaskDetail(activeTask.value)
 }
+
+onUnmounted(clearExitTimer)
 </script>
 
 <template>
@@ -179,17 +311,18 @@ function handleCardClick() {
 
           <!-- Active Swipe Card -->
           <div
+            ref="cardRef"
             @pointerdown="onPointerDown"
             @pointermove="onPointerMove"
             @pointerup="onPointerUp"
             @pointercancel="onPointerUp"
-            :style="cardStyle"
-            class="absolute inset-0 bg-surface-bright border-2 border-primary/30 shadow-xl rounded-2xl p-6 flex flex-col justify-between cursor-grab active:cursor-grabbing select-none overflow-hidden touch-none"
+            class="absolute inset-0 bg-surface-bright border-2 border-primary/30 shadow-xl rounded-2xl p-6 flex flex-col justify-between cursor-grab active:cursor-grabbing gesture-surface touch-lock overflow-hidden"
           >
             <!-- Swipe Direction Overlay: Right (Do First) -->
             <div
-              :style="{ opacity: rightSwipeOpacity }"
-              class="absolute inset-0 bg-error/15 border-4 border-error rounded-2xl flex items-center justify-start p-6 pointer-events-none transition-opacity z-10"
+              ref="doFirstOverlayRef"
+              style="opacity: 0"
+              class="absolute inset-0 bg-error/15 border-4 border-error rounded-2xl flex items-center justify-start p-6 pointer-events-none z-10"
             >
               <span class="px-4 py-2 bg-error text-on-error rounded-xl font-bold text-lg shadow-md uppercase tracking-wider">
                 Do First
@@ -198,8 +331,9 @@ function handleCardClick() {
 
             <!-- Swipe Direction Overlay: Left (Delegate) -->
             <div
-              :style="{ opacity: leftSwipeOpacity }"
-              class="absolute inset-0 bg-status-warn-surface border-4 border-status-warn rounded-2xl flex items-center justify-end p-6 pointer-events-none transition-opacity z-10"
+              ref="delegateOverlayRef"
+              style="opacity: 0"
+              class="absolute inset-0 bg-status-warn-surface border-4 border-status-warn rounded-2xl flex items-center justify-end p-6 pointer-events-none z-10"
             >
               <span class="px-4 py-2 bg-status-warn text-white rounded-xl font-bold text-lg shadow-md uppercase tracking-wider">
                 Delegate
@@ -254,6 +388,7 @@ function handleCardClick() {
                 v-model="quickInput"
                 @keydown.enter="handleQuickAdd"
                 type="text"
+                enterkeyhint="done"
                 placeholder="Add a task to sort…"
                 aria-label="New task title"
                 class="w-full pl-3 pr-10 py-2.5 bg-surface-container-low border border-surface-variant rounded-xl text-xs text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright transition-all outline-none"
