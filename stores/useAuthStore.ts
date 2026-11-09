@@ -18,14 +18,15 @@ export const useAuthStore = defineStore('auth', () => {
    * /api/auth/me, which reads only the httpOnly session cookie.
    *
    * Two correctness details:
-   *  - Concurrency: the auth plugin and the route middleware can both call this
-   *    during one navigation. Returning early while a request was in flight
-   *    left the second caller with `user === null`, which bounced authenticated
-   *    users back to /login. Callers now share the same in-flight promise.
+   *  - Concurrency: the auth plugin (and any future caller) can invoke this
+   *    concurrently. Returning early while a request was in flight left the
+   *    second caller with `user === null`. Callers now share one in-flight
+   *    promise.
    *  - SSR: during server rendering the browser cookie is not attached to the
-   *    internal `$fetch`, so `/api/auth/me` always answered 401 and the
-   *    middleware redirected on the very first paint. The incoming request
-   *    headers are forwarded explicitly.
+   *    internal `$fetch`, so `/api/auth/me` would answer 401. The incoming
+   *    request headers are forwarded explicitly. (No route middleware guards
+   *    the app today, but a component that awaits this during SSR — or a guard
+   *    reintroduced later — still needs this to be correct.)
    */
   let inflight: Promise<void> | null = null
 

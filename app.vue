@@ -9,15 +9,17 @@ const focusStore = useFocusStore()
 useRealtimeSync()
 
 const tabTitle = computed(() => {
-  const taskTitle = focusStore.activeTaskTitle || 'NeuralFlow'
+  const taskTitle = focusStore.activeTaskTitle.trim()
 
   if (focusStore.mode === 'work') {
     if (focusStore.isRunning) {
-      return `⏳ ${focusStore.formattedTime} - ${taskTitle}`
+      return `⏳ ${focusStore.formattedTime} - ${taskTitle || 'No task'}`
     } else if (focusStore.elapsedSeconds > 0) {
-      return `⏸️ ${focusStore.formattedTime} - ${taskTitle}`
+      return `⏸️ ${focusStore.formattedTime} - ${taskTitle || 'No task'}`
     } else {
-      return `🎯 ${taskTitle} - NeuralFlow`
+      // Without a selected task, fall back to the plain app name instead of
+      // repeating it ("NeuralFlow - NeuralFlow").
+      return taskTitle ? `🎯 ${taskTitle} - NeuralFlow` : 'NeuralFlow'
     }
   } else if (focusStore.mode === 'shortBreak' || focusStore.mode === 'longBreak') {
     if (focusStore.isRunning) {

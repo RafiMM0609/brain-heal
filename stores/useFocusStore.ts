@@ -6,8 +6,11 @@ import type { FocusMode, FocusSession } from '~/types/focus'
 
 export const useFocusStore = defineStore('focus', () => {
   const { apiFetch } = useApi()
-  const activeTaskId = ref<string | null>('task-1')
-  const activeTaskTitle = ref<string>('Finalize Q3 Strategy Deck')
+  // Empty until the user (or a restored session) picks a task. This used to be
+  // hardcoded to a demo task, which leaked a fake title into the tab title and
+  // the focus header for visitors without a session.
+  const activeTaskId = ref<string | null>(null)
+  const activeTaskTitle = ref<string>('')
 
   const mode = ref<FocusMode>('work')
   const durationSeconds = ref<number>(25 * 60) // 25 minutes default
