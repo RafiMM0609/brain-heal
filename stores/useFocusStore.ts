@@ -93,11 +93,23 @@ export const useFocusStore = defineStore('focus', () => {
         if (res.session.taskTitle) activeTaskTitle.value = res.session.taskTitle
         if (res.session.mode) mode.value = res.session.mode
         if (res.session.durationSeconds) durationSeconds.value = res.session.durationSeconds
-        if (res.session.elapsedSeconds !== undefined) elapsedSeconds.value = res.session.elapsedSeconds
+        // A running local timer is authoritative for both elapsed time and the
+        // target timestamp, because everything displayed is derived from the
+        // target. Adopting the payload's target here made the countdown jump
+        // (e.g. 40s elapsed became 1440s) whenever a sync arrived mid-session.
+        const localIsCounting = isRunning.value && targetEndTimestamp.value !== null
+        if (!localIsCounting && res.session.elapsedSeconds !== undefined) {
+          elapsedSeconds.value = res.session.elapsedSeconds
+        }
 
         if (res.session.isRunning && res.session.targetEndTimestamp) {
-          targetEndTimestamp.value = res.session.targetEndTimestamp
-          startTimerLocalOnly()
+          if (!localIsCounting) {
+            targetEndTimestamp.value = res.session.targetEndTimestamp
+            startTimerLocalOnly()
+          } else {
+            // Same session, already counting: re-derive instead of re-targeting.
+            updateElapsedFromWallClock()
+          }
         } else if (res.session.isRunning === false && isRunning.value) {
           pauseTimerLocalOnly()
         }
@@ -152,6 +164,7 @@ export const useFocusStore = defineStore('focus', () => {
   }
 
   let timerWorker: Worker | null = null
+  let lastTickAt = 0
 
   function initWorker() {
     if (!import.meta.client || typeof Worker === 'undefined') return null
@@ -172,6 +185,7 @@ export const useFocusStore = defineStore('focus', () => {
       const worker = new Worker(URL.createObjectURL(blob))
       worker.onmessage = (e) => {
         if (e.data === 'tick') {
+          lastTickAt = Date.now()
           updateElapsedFromWallClock()
         }
       }
@@ -184,22 +198,52 @@ export const useFocusStore = defineStore('focus', () => {
 
   function startTimerLocalOnly() {
     isRunning.value = true
+    lastTickAt = 0
     if (timerInterval.value) clearInterval(timerInterval.value)
 
+    // `initWorker()` returns null when Worker is unavailable. It can also
+    // "succeed" while the blob script is blocked by CSP, in which case no tick
+    // ever arrives. `startIntervalFallback()` therefore also arms a plain
+    // setInterval whenever the worker fails to prove it is alive, so the
+    // countdown can never be left silently frozen.
     if (!timerWorker && import.meta.client) {
       timerWorker = initWorker()
     }
 
     if (timerWorker) {
       timerWorker.postMessage('start')
+      armFallbackWatchdog()
     } else {
-      // Fallback interval for environments without worker support
-      timerInterval.value = setInterval(() => {
-        updateElapsedFromWallClock()
-      }, 500)
+      startIntervalFallback()
     }
 
     updateElapsedFromWallClock()
+  }
+
+  function startIntervalFallback() {
+    if (timerInterval.value) clearInterval(timerInterval.value)
+    timerInterval.value = setInterval(() => {
+      updateElapsedFromWallClock()
+    }, 500)
+  }
+
+  let fallbackWatchdog: ReturnType<typeof setTimeout> | null = null
+
+  /**
+   * A Worker whose script is blocked (e.g. by a Content-Security-Policy that
+   * lacks `worker-src blob:`) still constructs without throwing — it simply
+   * never posts a tick. If no tick arrives shortly after starting, switch to the
+   * interval fallback.
+   */
+  function armFallbackWatchdog() {
+    if (fallbackWatchdog) clearTimeout(fallbackWatchdog)
+    fallbackWatchdog = setTimeout(() => {
+      fallbackWatchdog = null
+      if (isRunning.value && !lastTickAt) {
+        console.warn('[FocusStore] Timer worker produced no ticks; using interval fallback.')
+        startIntervalFallback()
+      }
+    }, 1200)
   }
 
   function pauseTimerLocalOnly() {
@@ -210,14 +254,21 @@ export const useFocusStore = defineStore('focus', () => {
     if (timerWorker) {
       timerWorker.postMessage('stop')
     }
+    if (fallbackWatchdog) {
+      clearTimeout(fallbackWatchdog)
+      fallbackWatchdog = null
+    }
+    lastTickAt = 0
     isRunning.value = false
     targetEndTimestamp.value = null
   }
 
   async function startTimer() {
     if (isRunning.value) return
-    await requestNotificationPermission()
-    
+
+    // Start counting first, then ask for notification permission. Awaiting the
+    // permission prompt here meant the countdown stayed frozen at 25:00 until
+    // the user answered the dialog (or forever, if it was dismissed).
     lastLocalActionTimestamp.value = Date.now()
     // Set target end time based on remaining duration
     const remainingSecs = durationSeconds.value - elapsedSeconds.value
@@ -225,6 +276,9 @@ export const useFocusStore = defineStore('focus', () => {
 
     startTimerLocalOnly()
     await syncSession()
+
+    // Fire-and-forget: never blocks the countdown.
+    requestNotificationPermission().catch(() => {})
   }
 
   function pauseTimer() {
@@ -335,6 +389,7 @@ export const useFocusStore = defineStore('focus', () => {
     remainingSeconds,
     formattedTime,
     progressPercent,
+    targetEndTimestamp,
     isRunning,
     isDistractionDumpOpen,
     isMentalClosureOpen,

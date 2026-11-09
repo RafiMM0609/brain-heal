@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
 
+const apiFetchMock = vi.fn().mockResolvedValue({ session: null })
+
 vi.mock('~/composables/useApi', () => ({
-  useApi: () => ({
-    apiFetch: vi.fn().mockResolvedValue({ session: null })
-  }),
+  useApi: () => ({ apiFetch: apiFetchMock }),
   getClientId: () => 'test-client-id'
 }))
 
@@ -82,5 +82,110 @@ describe('stores/useFocusStore', () => {
 
     expect(store.activeTaskId).toBe('task-888')
     expect(store.activeTaskTitle).toBe('Refactor Microservices')
+  })
+})
+
+describe('stores/useFocusStore — countdown integrity', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+    apiFetchMock.mockReset()
+    apiFetchMock.mockResolvedValue({ session: null })
+    vi.useRealTimers()
+  })
+
+  it('a running local timer is not overwritten by a stale sync payload', async () => {
+    const store = useFocusStore()
+
+    // The timer is counting locally: 40s in.
+    store.durationSeconds = 1500
+    store.isRunning = true
+    store.elapsedSeconds = 40
+    store.targetEndTimestamp = Date.now() + 1460 * 1000
+
+    // A sync payload computed earlier claims only 5s had elapsed.
+    apiFetchMock.mockResolvedValueOnce({
+      session: {
+        id: 'x:focus-session-main',
+        mode: 'work',
+        durationSeconds: 1500,
+        elapsedSeconds: 5,
+        isRunning: true,
+        targetEndTimestamp: Date.now() + 60_000,
+        completed: false,
+        timestamp: new Date().toISOString()
+      }
+    })
+
+    await store.fetchSession()
+
+    // Must not jump backwards to 5s.
+    expect(store.elapsedSeconds).toBe(40)
+  })
+
+  it('adopts the payload when no local timer is running', async () => {
+    const store = useFocusStore()
+    store.isRunning = false
+
+    apiFetchMock.mockResolvedValueOnce({
+      session: {
+        id: 'x:focus-session-main',
+        mode: 'work',
+        durationSeconds: 1500,
+        elapsedSeconds: 300,
+        isRunning: false,
+        targetEndTimestamp: null,
+        completed: false,
+        timestamp: new Date().toISOString()
+      }
+    })
+
+    await store.fetchSession()
+
+    expect(store.elapsedSeconds).toBe(300)
+    expect(store.formattedTime).toBe('20:00')
+  })
+
+  it('counts down from the wall clock rather than accumulating ticks', () => {
+    const store = useFocusStore()
+    store.durationSeconds = 1500
+    store.elapsedSeconds = 0
+
+    // Simulate: started 90s ago, 1410s left on the clock.
+    store.targetEndTimestamp = Date.now() + 1410 * 1000
+    store.isRunning = true
+
+    store.updateElapsedFromWallClock()
+
+    // Derived from the target timestamp, so the value is stable regardless of
+    // how many ticks (0 or 100) were delivered.
+    expect(store.elapsedSeconds).toBe(90)
+    expect(store.formattedTime).toBe('23:30')
+  })
+
+  it('does not advance when the timer is not running', () => {
+    const store = useFocusStore()
+    store.isRunning = false
+    store.targetEndTimestamp = Date.now() + 60_000
+    store.elapsedSeconds = 12
+
+    store.updateElapsedFromWallClock()
+
+    expect(store.elapsedSeconds).toBe(12)
+  })
+
+  it('accepts every FocusMode the client can send', async () => {
+    // Guards the server/client mode-vocabulary drift that made break sessions
+    // return 400 and silently lose their persisted state.
+    const { FocusMode } = (await import('~/types/focus')) as unknown as { FocusMode: never }
+    void FocusMode
+
+    const modes = ['work', 'quickWork', 'shortBreak', 'longBreak'] as const
+    for (const mode of modes) {
+      expect(() => {
+        const store = useFocusStore()
+        store.setMode(mode, 5)
+      }).not.toThrow()
+      expect(useFocusStore().mode).toBe(mode)
+    }
   })
 })

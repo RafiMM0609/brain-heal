@@ -102,7 +102,12 @@ export default defineNuxtConfig({
           'Cross-Origin-Opener-Policy': 'same-origin',
           'Content-Security-Policy': [
             "default-src 'self'",
+            // `worker-src blob:` is required by the focus timer: its tick loop
+            // runs in a Web Worker built from a Blob. Without this directive the
+            // worker object is constructed successfully but its script is blocked,
+            // so the countdown silently never starts.
             "script-src 'self' 'unsafe-inline'",
+            "worker-src 'self' blob:",
             "style-src 'self' 'unsafe-inline'",
             "img-src 'self' data: blob: https://lh3.googleusercontent.com",
             "font-src 'self' data:",

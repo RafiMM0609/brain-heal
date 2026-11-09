@@ -3,13 +3,17 @@ import { requireSession, getUserRedisKey } from '~/server/utils/auth'
 import { REDIS_KEYS, redisSet } from '~/server/utils/redis'
 import { syncBus } from '~/server/utils/bus'
 import { schedulePushTimer, cancelPushTimer, storePushSubscription } from '~/server/utils/pushScheduler'
-import type { FocusSession } from '~/types/focus'
+import type { FocusSession, FocusMode } from '~/types/focus'
 
 interface FocusSessionRequestBody extends Partial<FocusSession> {
   pushSubscription?: webPush.PushSubscription | null
 }
 
-const VALID_MODES = ['work', 'quickWork', 'break', 'recovery']
+// Must stay in sync with the FocusMode union in types/focus.ts. The previous
+// list accepted 'break'/'recovery' (values no client ever sends) and rejected
+// 'shortBreak'/'longBreak', so every break session returned 400 and its state
+// was never persisted or restored.
+const VALID_MODES: FocusMode[] = ['work', 'quickWork', 'shortBreak', 'longBreak']
 const MAX_DURATION_SECONDS = 24 * 60 * 60
 
 export default defineEventHandler(async (event) => {
