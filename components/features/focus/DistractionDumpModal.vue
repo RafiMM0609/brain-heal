@@ -108,10 +108,10 @@ function handleSave() {
           <button
             type="submit"
             :disabled="!distractionText.trim()"
-            class="px-4 py-3.5 bg-primary text-on-primary rounded-xl font-semibold hover:bg-primary-container disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center shrink-0"
-            title="Dump Thought"
+            class="px-4 py-3.5 min-h-12 min-w-12 bg-primary text-on-primary rounded-xl font-semibold hover:bg-primary-container disabled:opacity-40 disabled:cursor-not-allowed transition-all flex items-center justify-center shrink-0"
+            aria-label="Save this distraction"
           >
-            <Icon name="material-symbols:send" class="text-[20px]" />
+            <Icon name="material-symbols:send" class="text-[20px]" aria-hidden="true" />
           </button>
         </form>
 
@@ -119,26 +119,25 @@ function handleSave() {
           v-if="justSaved"
           class="absolute inset-0 bg-primary-container/95 text-on-primary-container rounded-xl flex items-center justify-center font-bold text-sm transition-all z-10 shadow-lg"
         >
-          <Icon name="material-symbols:check-circle" class="text-[22px] mr-2 text-primary" />
-          Dumped to Working Memory! Resuming focus...
+          <Icon name="material-symbols:check-circle" class="text-[22px] mr-2 text-primary" aria-hidden="true" />
+          Saved. Back to focus…
         </div>
       </div>
 
-      <div class="flex items-center justify-between text-xs text-outline">
-        <span>Tekan <kbd class="px-1.5 py-0.5 bg-surface-container-high rounded font-mono">Enter</kbd> / <kbd class="px-1.5 py-0.5 bg-surface-container-high rounded font-mono">Send</kbd> untuk simpan</span>
-        <span class="text-[11px]">⚡ Instant Dump</span>
+      <div class="flex flex-wrap items-center justify-between gap-2 text-xs text-on-surface-variant">
+        <span>Press <kbd class="px-1.5 py-0.5 bg-surface-container-high rounded font-mono">Enter</kbd> to save and return to focus</span>
       </div>
 
       <!-- List of recent distraction logs -->
       <div v-if="distractionStore.distractions.length > 0" class="pt-4 border-t border-surface-variant">
         <div class="flex items-center justify-between mb-2">
-          <h4 class="text-label-sm uppercase font-semibold text-outline">Logged Distractions in Session</h4>
+          <h4 class="text-label-sm uppercase font-semibold text-on-surface-variant">Captured this session</h4>
           <button
             @click="distractionStore.clearAllDistractions()"
-            class="text-xs text-error hover:underline font-medium flex items-center gap-1"
-            title="Clear all distractions"
+            class="text-xs text-error hover:underline font-medium flex items-center gap-1 min-h-9 px-1 rounded"
+            aria-label="Clear all captured distractions"
           >
-            <Icon name="material-symbols:delete-sweep" class="text-[14px]" /> Clear All
+            <Icon name="material-symbols:delete-sweep" class="text-[14px]" aria-hidden="true" /> Clear all
           </button>
         </div>
         <div class="space-y-2 max-h-40 overflow-y-auto pr-1">
@@ -154,17 +153,17 @@ function handleSave() {
                 @click="distractionStore.convertToTask(item.id)"
                 class="text-xs text-primary font-semibold hover:underline flex items-center gap-1"
               >
-                <Icon name="material-symbols:add-task" class="text-[14px]" /> Convert to Task
+                <Icon name="material-symbols:add-task" class="text-[14px]" aria-hidden="true" /> Convert to task
               </button>
               <span v-else class="text-xs text-secondary font-medium flex items-center gap-1">
-                <Icon name="material-symbols:check" class="text-[14px]" /> In Inbox
+                <Icon name="material-symbols:check" class="text-[14px]" aria-hidden="true" /> In inbox
               </span>
               <button
                 @click="distractionStore.deleteDistraction(item.id)"
-                class="text-outline hover:text-error transition-colors p-1 rounded"
-                title="Delete distraction"
+                class="text-outline-variant hover:text-error transition-colors p-2 rounded min-h-9 min-w-9 flex items-center justify-center"
+                :aria-label="`Delete distraction: ${item.content}`"
               >
-                <Icon name="material-symbols:delete" class="text-[16px]" />
+                <Icon name="material-symbols:delete" class="text-[16px]" aria-hidden="true" />
               </button>
             </div>
           </div>

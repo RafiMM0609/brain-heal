@@ -9,38 +9,42 @@ const route = useRoute()
   >
     <NuxtLink
       to="/"
-      class="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-2xl transition-all active:scale-95"
+      class="flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[56px] min-h-[48px] justify-center rounded-2xl transition-all active:scale-95"
       :class="route.path === '/' ? 'text-primary font-bold bg-primary/10' : 'text-on-surface-variant hover:text-primary'"
+      :aria-current="route.path === '/' ? 'page' : undefined"
     >
-      <Icon name="material-symbols:edit-note" class="text-[20px]" />
-      <span class="text-[10px] font-medium tracking-tight">Prep</span>
+      <Icon name="material-symbols:edit-note" class="text-[20px]" aria-hidden="true" />
+      <span class="text-[11px] font-medium tracking-tight">Prep</span>
     </NuxtLink>
 
     <NuxtLink
       to="/execute"
-      class="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-2xl transition-all active:scale-95"
+      class="flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[56px] min-h-[48px] justify-center rounded-2xl transition-all active:scale-95"
       :class="route.path === '/execute' ? 'text-primary font-bold bg-primary/10' : 'text-on-surface-variant hover:text-primary'"
+      :aria-current="route.path === '/execute' ? 'page' : undefined"
     >
-      <Icon name="material-symbols:bolt" class="text-[20px]" />
-      <span class="text-[10px] font-medium tracking-tight">Execute</span>
+      <Icon name="material-symbols:bolt" class="text-[20px]" aria-hidden="true" />
+      <span class="text-[11px] font-medium tracking-tight">Execute</span>
     </NuxtLink>
 
     <NuxtLink
       to="/recovery"
-      class="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-2xl transition-all active:scale-95"
+      class="flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[56px] min-h-[48px] justify-center rounded-2xl transition-all active:scale-95"
       :class="route.path === '/recovery' ? 'text-primary font-bold bg-primary/10' : 'text-on-surface-variant hover:text-primary'"
+      :aria-current="route.path === '/recovery' ? 'page' : undefined"
     >
-      <Icon name="material-symbols:self-improvement" class="text-[20px]" />
-      <span class="text-[10px] font-medium tracking-tight">Recovery</span>
+      <Icon name="material-symbols:self-improvement" class="text-[20px]" aria-hidden="true" />
+      <span class="text-[11px] font-medium tracking-tight">Recovery</span>
     </NuxtLink>
 
     <NuxtLink
       to="/share"
-      class="flex flex-col items-center gap-0.5 px-2.5 py-1 rounded-2xl transition-all active:scale-95"
+      class="flex flex-col items-center gap-0.5 px-3 py-1.5 min-w-[56px] min-h-[48px] justify-center rounded-2xl transition-all active:scale-95"
       :class="route.path === '/share' ? 'text-primary font-bold bg-primary/10' : 'text-on-surface-variant hover:text-primary'"
+      :aria-current="route.path === '/share' ? 'page' : undefined"
     >
-      <Icon name="material-symbols:content-paste-go" class="text-[20px]" />
-      <span class="text-[10px] font-medium tracking-tight">Share</span>
+      <Icon name="material-symbols:content-paste-go" class="text-[20px]" aria-hidden="true" />
+      <span class="text-[11px] font-medium tracking-tight">Share</span>
     </NuxtLink>
   </nav>
 </template>

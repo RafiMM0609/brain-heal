@@ -19,11 +19,27 @@ const strokeColor = computed(() => {
 })
 
 const modeLabel = computed(() => {
-  if (focusStore.mode === 'work') return '🧠 Deep Work Session'
-  if (focusStore.mode === 'quickWork') return '⚡ Quick Work Session'
-  if (focusStore.mode === 'shortBreak') return '🌿 Short Break'
-  return '☕ Long Break'
+  if (focusStore.mode === 'work') return 'Deep work'
+  if (focusStore.mode === 'quickWork') return 'Quick work'
+  if (focusStore.mode === 'shortBreak') return 'Short break'
+  return 'Long break'
 })
+
+/**
+ * Audit V-02: `w-18 h-18` does not exist in Tailwind, so the primary control
+ * silently fell back to the base size and rendered 40px on mobile. Explicit
+ * sizes keep it at a comfortable 64px / 80px at every breakpoint.
+ */
+const modeOptions = [
+  { key: 'work', label: 'Deep', minutes: 25 },
+  { key: 'quickWork', label: 'Quick', minutes: 15 },
+  { key: 'shortBreak', label: 'Short', minutes: 5 },
+  { key: 'longBreak', label: 'Long', minutes: 15 }
+] as const
+
+function selectMode(mode: typeof modeOptions[number]['key'], minutes: number) {
+  focusStore.setMode(mode, minutes)
+}
 </script>
 
 <template>
@@ -31,61 +47,43 @@ const modeLabel = computed(() => {
     <!-- Active Focus Task Header Banner -->
     <div class="mb-4 sm:mb-6 text-center w-full px-2 max-w-3xl mx-auto">
       <div class="inline-flex items-center gap-1.5 px-3 py-1 bg-primary/10 border border-primary/20 text-primary rounded-full text-[11px] sm:text-xs font-bold tracking-wider uppercase mb-2">
-        <Icon name="material-symbols:bolt" class="text-[14px]" :class="{ 'animate-pulse': focusStore.isRunning }" />
-        <span>Current Focus Anchor</span>
+        <Icon name="material-symbols:bolt" class="text-[14px]" :class="{ 'animate-pulse': focusStore.isRunning }" aria-hidden="true" />
+        <span>Current focus</span>
       </div>
 
-      <h2 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-on-surface leading-snug px-2 max-w-3xl mx-auto break-words" :title="focusStore.activeTaskTitle">
-        {{ focusStore.activeTaskTitle || 'No Active Task Selected' }}
-      </h2>
+      <h1 class="text-xl sm:text-2xl md:text-3xl font-extrabold text-on-surface leading-snug px-2 max-w-3xl mx-auto break-words">
+        {{ focusStore.activeTaskTitle || 'No task selected' }}
+      </h1>
 
       <div v-if="!focusStore.activeTaskTitle" class="mt-2">
         <NuxtLink
           to="/"
           class="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline"
         >
-          <Icon name="material-symbols:add" class="text-[16px]" />
-          <span>Select or create a task in Prep tab</span>
+          <Icon name="material-symbols:add" class="text-[16px]" aria-hidden="true" />
+          <span>Pick a task from Prep</span>
         </NuxtLink>
       </div>
     </div>
 
     <!-- Duration Mode Switcher -->
-    <div class="w-full max-w-sm sm:max-w-lg p-1.5 bg-surface-container-low/90 backdrop-blur-md rounded-2xl mb-4 border border-surface-variant grid grid-cols-4 gap-1 shadow-sm">
+    <div
+      class="w-full max-w-sm sm:max-w-lg p-1.5 bg-surface-container-low/90 backdrop-blur-md rounded-2xl mb-4 border border-surface-variant grid grid-cols-4 gap-1 shadow-sm"
+      role="group"
+      aria-label="Session length"
+    >
       <button
-        @click="focusStore.setMode('work', 25)"
-        class="py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 text-center"
-        :class="focusStore.mode === 'work' ? 'bg-primary text-on-primary shadow-sm font-bold' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'"
+        v-for="opt in modeOptions"
+        :key="opt.key"
+        @click="selectMode(opt.key, opt.minutes)"
+        :aria-pressed="focusStore.mode === opt.key"
+        class="min-h-11 py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 text-center"
+        :class="focusStore.mode === opt.key
+          ? (opt.minutes === 25 || opt.minutes === 15 ? 'bg-primary text-on-primary shadow-sm font-bold' : 'bg-secondary text-on-secondary shadow-sm font-bold')
+          : (opt.minutes === 25 || opt.minutes === 15 ? 'text-on-surface-variant hover:text-primary hover:bg-surface-container' : 'text-on-surface-variant hover:text-secondary hover:bg-surface-container')"
       >
-        <span>Deep</span>
-        <span class="text-[10px] opacity-75">(25m)</span>
-      </button>
-
-      <button
-        @click="focusStore.setMode('quickWork', 15)"
-        class="py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 text-center"
-        :class="focusStore.mode === 'quickWork' ? 'bg-primary text-on-primary shadow-sm font-bold' : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'"
-      >
-        <span>Quick</span>
-        <span class="text-[10px] opacity-75">(15m)</span>
-      </button>
-
-      <button
-        @click="focusStore.setMode('shortBreak', 5)"
-        class="py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 text-center"
-        :class="focusStore.mode === 'shortBreak' ? 'bg-secondary text-on-secondary shadow-sm font-bold' : 'text-on-surface-variant hover:text-secondary hover:bg-surface-container'"
-      >
-        <span>Short</span>
-        <span class="text-[10px] opacity-75">(5m)</span>
-      </button>
-
-      <button
-        @click="focusStore.setMode('longBreak', 15)"
-        class="py-2 px-1 rounded-xl text-xs sm:text-sm font-semibold transition-all flex flex-col sm:flex-row items-center justify-center gap-0.5 sm:gap-1 text-center"
-        :class="focusStore.mode === 'longBreak' ? 'bg-secondary text-on-secondary shadow-sm font-bold' : 'text-on-surface-variant hover:text-secondary hover:bg-surface-container'"
-      >
-        <span>Long</span>
-        <span class="text-[10px] opacity-75">(15m)</span>
+        <span>{{ opt.label }}</span>
+        <span class="text-[10px] opacity-80">({{ opt.minutes }}m)</span>
       </button>
     </div>
 
@@ -112,7 +110,7 @@ const modeLabel = computed(() => {
       </svg>
 
       <div class="text-center z-10 relative flex flex-col items-center justify-center">
-        <div class="text-display-lg font-bold text-primary tracking-tight font-mono text-5xl sm:text-6xl md:text-7xl drop-shadow-sm">
+        <div class="text-display-lg font-bold text-primary tracking-tight font-mono text-5xl sm:text-6xl md:text-7xl drop-shadow-sm" role="timer" aria-live="off" :aria-label="`Time remaining ${focusStore.formattedTime}`">
           {{ focusStore.formattedTime }}
         </div>
         <div class="text-xs sm:text-sm font-semibold px-3 py-1 rounded-full text-on-surface-variant bg-surface-container-high/80 border border-surface-variant/50 inline-block mt-2 shadow-2xs">
@@ -127,11 +125,11 @@ const modeLabel = computed(() => {
         <!-- Complete Task & Close Mind Button (Logo/Icon only) -->
         <button
           @click="focusStore.openMentalClosure()"
-          class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-secondary/40 bg-secondary/10 text-secondary hover:bg-secondary hover:text-on-secondary transition-all shadow-sm active:scale-90 flex items-center justify-center group"
-          title="Complete Task & Close Mind"
-          aria-label="Complete Task & Close Mind"
+          class="w-12 h-12 sm:w-14 sm:h-14 min-w-11 min-h-11 rounded-full border border-secondary/40 bg-secondary/10 text-secondary hover:bg-secondary hover:text-on-secondary transition-all shadow-sm active:scale-90 flex items-center justify-center group"
+          title="Complete task and close the loop"
+          aria-label="Complete task and close the loop"
         >
-          <Icon name="material-symbols:check-circle-outline" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" />
+          <Icon name="material-symbols:check-circle-outline" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" aria-hidden="true" />
         </button>
 
         <!-- Reset / Stop Button -->
@@ -141,7 +139,7 @@ const modeLabel = computed(() => {
           title="Reset session"
           aria-label="Reset session"
         >
-          <Icon name="material-symbols:stop" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" />
+          <Icon name="material-symbols:stop" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" aria-hidden="true" />
         </button>
 
         <!-- Play / Pause Main Button -->
@@ -152,11 +150,11 @@ const modeLabel = computed(() => {
           />
           <button
             @click="focusStore.isRunning ? focusStore.pauseTimer() : focusStore.startTimer()"
-            class="w-18 h-18 sm:w-20 sm:h-20 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-xl hover:shadow-2xl hover:opacity-95 transition-all active:scale-95 relative z-10 border-2 border-surface-bright group"
-            :title="focusStore.isRunning ? 'Pause' : 'Start'"
-            :aria-label="focusStore.isRunning ? 'Pause' : 'Start'"
+            class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-xl hover:shadow-2xl hover:opacity-95 transition-all active:scale-95 relative z-10 border-2 border-surface-bright group"
+            :title="focusStore.isRunning ? 'Pause session' : 'Start session'"
+            :aria-label="focusStore.isRunning ? 'Pause session' : 'Start session'"
           >
-            <Icon :name="focusStore.isRunning ? 'material-symbols:pause' : 'material-symbols:play-arrow'" class="text-[36px] sm:text-[42px] transition-transform group-hover:scale-105" />
+            <Icon :name="focusStore.isRunning ? 'material-symbols:pause' : 'material-symbols:play-arrow'" class="text-[32px] sm:text-[42px] transition-transform group-hover:scale-105" aria-hidden="true" />
           </button>
         </div>
 
@@ -167,7 +165,7 @@ const modeLabel = computed(() => {
           title="Skip session"
           aria-label="Skip session"
         >
-          <Icon name="material-symbols:skip-next" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" />
+          <Icon name="material-symbols:skip-next" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" aria-hidden="true" />
         </button>
 
         <!-- Picture-in-Picture Button (Logo/Icon only) -->
@@ -176,10 +174,10 @@ const modeLabel = computed(() => {
           @click="togglePiP()"
           class="w-12 h-12 sm:w-14 sm:h-14 rounded-full border border-primary/30 bg-surface-bright text-primary hover:bg-primary/10 transition-all shadow-sm active:scale-90 flex items-center justify-center group"
           :class="{ 'bg-secondary text-on-secondary border-transparent hover:bg-secondary/90': pipWindow }"
-          :title="pipWindow ? 'Close Floating Window' : 'Pop out PiP Window'"
-          :aria-label="pipWindow ? 'Close Floating Window' : 'Pop out PiP Window'"
+          :title="pipWindow ? 'Close floating window' : 'Pop out floating window'"
+          :aria-label="pipWindow ? 'Close floating window' : 'Pop out floating window'"
         >
-          <Icon name="material-symbols:picture-in-picture-alt" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" />
+          <Icon name="material-symbols:picture-in-picture-alt" class="text-[24px] sm:text-[28px] transition-transform group-hover:scale-110" aria-hidden="true" />
         </button>
       </div>
     </div>
@@ -191,7 +189,7 @@ const modeLabel = computed(() => {
         class="flex items-center gap-3 px-5 py-3 bg-surface-bright rounded-full shadow-lg border border-surface-variant hover:border-primary/40 hover:bg-surface transition-all group"
       >
         <div class="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center group-hover:bg-primary group-hover:text-on-primary transition-colors">
-          <Icon name="material-symbols:add" class="text-[18px]" />
+          <Icon name="material-symbols:add" class="text-[18px]" aria-hidden="true" />
         </div>
         <span class="text-xs font-bold text-on-surface">Distraction Dump</span>
       </button>

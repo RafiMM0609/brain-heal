@@ -2,12 +2,15 @@
 import { useTaskStore } from '~/stores/useTaskStore'
 import { useFocusStore } from '~/stores/useFocusStore'
 import { useTaskDetailModal } from '~/composables/useTaskDetailModal'
+import { useToast } from '~/composables/useToast'
+import { copyTextToClipboard } from '~/utils/clipboard'
 import type { QuadrantType } from '~/types/task'
 import AppModal from '~/components/ui/AppModal.vue'
 
 const router = useRouter()
 const focusStore = useFocusStore()
 const taskStore = useTaskStore()
+const { showToast } = useToast()
 const { isModalOpen, selectedTask, closeTaskDetail } = useTaskDetailModal()
 
 function handleFocus() {
@@ -19,16 +22,23 @@ function handleFocus() {
 
 function handleDelete() {
   if (!selectedTask.value) return
-  taskStore.deleteTask(selectedTask.value.id)
+  const task = selectedTask.value
   closeTaskDetail()
+  taskStore.deleteTask(task.id, { undoable: true })
+}
+
+async function handleCopy() {
+  if (!selectedTask.value) return
+  const ok = await copyTextToClipboard(selectedTask.value.title)
+  showToast(ok ? 'Task copied to clipboard' : 'Could not copy to clipboard', ok ? 'success' : 'error')
 }
 
 function getQuadrantLabel(quadrant: QuadrantType) {
   switch (quadrant) {
-    case 'do-first': return 'Do First (Urgent & Important)'
-    case 'schedule': return 'Schedule (Not Urgent & Important)'
-    case 'delegate': return 'Delegate (Urgent & Low Impact)'
-    case 'eliminate': return 'Eliminate (Low Urgency & Impact)'
+    case 'do-first': return 'Do First · Urgent & Important'
+    case 'schedule': return 'Schedule · Not Urgent & Important'
+    case 'delegate': return 'Delegate · Urgent & Low Impact'
+    case 'eliminate': return 'Eliminate · Low Urgency & Impact'
     default: return 'Raw Inbox'
   }
 }
@@ -37,7 +47,7 @@ function getQuadrantColorClass(quadrant: QuadrantType) {
   switch (quadrant) {
     case 'do-first': return 'bg-error/10 text-error border-error/30'
     case 'schedule': return 'bg-primary/10 text-primary border-primary/30'
-    case 'delegate': return 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30'
+    case 'delegate': return 'bg-status-warn-surface text-status-warn border-status-warn/30'
     case 'eliminate': return 'bg-surface-container-high text-outline border-surface-variant'
     default: return 'bg-surface-container-high text-on-surface-variant border-surface-variant'
   }
@@ -47,16 +57,18 @@ function getQuadrantColorClass(quadrant: QuadrantType) {
 <template>
   <AppModal
     :isOpen="isModalOpen"
-    title="Detail Task"
+    title="Task detail"
     @close="closeTaskDetail"
   >
     <template #header>
+      <h3 id="modal-title" class="text-headline-md font-semibold text-primary truncate">
+        Task detail
+      </h3>
       <button
         @click="handleDelete"
-        class="ml-auto mr-1 text-xs font-bold text-error hover:bg-error/10 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95"
-        title="Delete Task"
+        class="ml-auto mr-1 min-h-11 md:min-h-0 text-xs font-bold text-error hover:bg-error/10 px-2.5 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 active:scale-95"
       >
-        <Icon name="material-symbols:delete-outline" class="text-[18px]" />
+        <Icon name="material-symbols:delete-outline" class="text-[18px]" aria-hidden="true" />
         <span>Delete</span>
       </button>
     </template>
@@ -70,32 +82,38 @@ function getQuadrantColorClass(quadrant: QuadrantType) {
           >
             {{ getQuadrantLabel(selectedTask.quadrant) }}
           </span>
-          <span v-if="selectedTask.completed" class="text-[11px] font-bold text-success bg-success/10 px-2.5 py-1 rounded-full border border-success/20">
-            Selesai ✓
+          <span v-if="selectedTask.completed" class="text-[11px] font-bold text-secondary bg-secondary/10 px-2.5 py-1 rounded-full border border-secondary/20">
+            Completed
           </span>
         </div>
 
-        <h3 class="text-xl font-bold text-on-surface leading-snug break-words">
+        <h4 class="text-headline-md font-bold text-on-surface leading-snug break-words">
           {{ selectedTask.title }}
-        </h3>
+        </h4>
 
         <div v-if="selectedTask.focusTimeMinutes" class="text-xs text-on-surface-variant flex items-center gap-1.5 pt-1">
-          <Icon name="material-symbols:timer" class="text-[16px] text-primary" />
-          <span>Waktu Fokus: <strong>{{ selectedTask.focusTimeMinutes }} menit</strong></span>
+          <Icon name="material-symbols:timer" class="text-[16px] text-primary" aria-hidden="true" />
+          <span>Focused time: <strong>{{ selectedTask.focusTimeMinutes }} min</strong></span>
         </div>
       </div>
 
-      <!-- Action: Single Focus Mode Button -->
-      <div class="pt-2">
+      <!-- Actions -->
+      <div class="pt-2 flex flex-col sm:flex-row gap-2">
         <button
           @click="handleFocus"
-          class="w-full py-3.5 px-4 bg-primary hover:bg-primary-container text-on-primary font-bold text-sm rounded-xl transition-all duration-200 flex items-center justify-center gap-2.5 shadow-md active:scale-[0.99]"
+          class="flex-1 min-h-12 py-3.5 px-4 bg-primary hover:bg-primary-container text-on-primary font-bold text-sm rounded-xl transition-all duration-200 flex items-center justify-center gap-2.5 shadow-md active:scale-[0.99]"
         >
-          <Icon name="material-symbols:bolt" class="text-[22px]" />
-          <span>Mulai Focus Mode</span>
+          <Icon name="material-symbols:bolt" class="text-[22px]" aria-hidden="true" />
+          <span>Start focus session</span>
+        </button>
+        <button
+          @click="handleCopy"
+          class="min-h-12 px-4 py-3.5 bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant font-semibold text-sm rounded-xl transition-all duration-200 flex items-center justify-center gap-2 border border-surface-variant active:scale-[0.99]"
+        >
+          <Icon name="material-symbols:content-copy" class="text-[20px]" aria-hidden="true" />
+          <span>Copy</span>
         </button>
       </div>
     </div>
   </AppModal>
 </template>
-

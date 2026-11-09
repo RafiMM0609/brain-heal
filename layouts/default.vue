@@ -38,6 +38,15 @@ onUnmounted(() => {
 
 <template>
   <div class="bg-background text-on-background min-h-screen flex flex-col md:flex-row">
+    <!-- Audit A-02: the first tab stop is now a skip link instead of the
+         navigation rail, so keyboard users can jump straight to the content. -->
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-xl focus:bg-primary focus:text-on-primary focus:font-semibold focus:shadow-xl"
+    >
+      Skip to main content
+    </a>
+
     <AppSidebar />
     <div
       class="flex-1 flex flex-col min-h-screen overflow-hidden relative transition-all duration-300 ease-in-out"
@@ -48,18 +57,21 @@ onUnmounted(() => {
         <StickyFocusHeader />
         <AppHeader />
       </div>
-      <main class="flex-1 overflow-y-auto px-4 pt-4 pb-24 md:px-8 md:pt-6 md:pb-8 bg-background">
+      <main
+        id="main-content"
+        tabindex="-1"
+        class="flex-1 overflow-y-auto px-4 pt-4 pb-24 md:px-8 md:pt-6 md:pb-8 bg-background focus:outline-none"
+      >
         <slot />
       </main>
 
       <!-- Distraction Dump Floating Action Button (FAB) on Mobile -->
       <button
         @click="focusStore.openDistractionDump()"
-        class="fixed bottom-[calc(4.25rem+env(safe-area-inset-bottom,0px))] right-4 z-40 md:hidden w-12 h-12 rounded-full bg-primary text-on-primary shadow-xl flex items-center justify-center active:scale-95 transition-all border-2 border-surface-bright"
-        title="Distraction Dump"
-        aria-label="Distraction Dump"
+        class="fixed bottom-[calc(5.5rem+env(safe-area-inset-bottom,0px))] right-4 z-30 md:hidden w-12 h-12 rounded-full bg-primary text-on-primary shadow-xl flex items-center justify-center active:scale-95 transition-all border-2 border-surface-bright"
+        aria-label="Capture a distraction"
       >
-        <Icon name="material-symbols:edit-note" class="text-[24px]" />
+        <Icon name="material-symbols:edit-note" class="text-[24px]" aria-hidden="true" />
       </button>
 
       <!-- Mobile Bottom Navigation Bar -->

@@ -1,19 +1,17 @@
 <script setup lang="ts">
 import { useTaskStore } from '~/stores/useTaskStore'
-import { useToast } from '~/composables/useToast'
 import { useSwipeModal } from '~/composables/useSwipeModal'
 import { useTaskDetailModal } from '~/composables/useTaskDetailModal'
+import { useTaskActions } from '~/composables/useTaskActions'
 import type { QuadrantType, TaskItem } from '~/types/task'
 import TaskContextMenu from '~/components/ui/TaskContextMenu.vue'
 
 const taskStore = useTaskStore()
-const { showToast } = useToast()
 const { openSwipeModal } = useSwipeModal()
 const { openTaskDetail } = useTaskDetailModal()
+const { deleteTaskWithUndo } = useTaskActions()
 const inputText = ref('')
 const isAnimating = ref(false)
-const copiedTaskId = ref<string | null>(null)
-let copyTimeout: ReturnType<typeof setTimeout> | null = null
 
 const contextMenuShow = ref(false)
 const contextMenuX = ref(0)
@@ -41,12 +39,12 @@ function handleContextMove(targetQuadrant: QuadrantType) {
 
 function handleContextDelete() {
   if (selectedTask.value) {
-    taskStore.deleteTask(selectedTask.value.id)
+    deleteTaskWithUndo(selectedTask.value.id)
   }
 }
 
+// Audit M-04: tapping a card no longer silently copies to the clipboard.
 function handleTaskClick(task: TaskItem) {
-  copyTaskText(task.title, task.id)
   openTaskDetail(task)
 }
 
@@ -54,35 +52,6 @@ function handleContextDetail() {
   if (selectedTask.value) {
     openTaskDetail(selectedTask.value)
   }
-}
-
-async function copyTaskText(text: string, taskId: string) {
-  try {
-    if (typeof navigator !== 'undefined' && navigator.clipboard && window.isSecureContext) {
-      await navigator.clipboard.writeText(text)
-    } else {
-      const textArea = document.createElement('textarea')
-      textArea.value = text
-      textArea.style.position = 'fixed'
-      textArea.style.left = '-999999px'
-      textArea.style.top = '-999999px'
-      document.body.appendChild(textArea)
-      textArea.focus()
-      textArea.select()
-      document.execCommand('copy')
-      textArea.remove()
-    }
-  } catch (err) {
-    console.warn('Clipboard write fallback:', err)
-  }
-
-  if (copyTimeout) clearTimeout(copyTimeout)
-  copiedTaskId.value = taskId
-  copyTimeout = setTimeout(() => {
-    copiedTaskId.value = null
-  }, 1500)
-
-  showToast('📋 Copied!')
 }
 
 function handleKeyDown(event: KeyboardEvent) {
@@ -100,7 +69,7 @@ function handleKeyDown(event: KeyboardEvent) {
 }
 
 function removeTask(id: string) {
-  taskStore.deleteTask(id)
+  deleteTaskWithUndo(id)
 }
 </script>
 
@@ -108,7 +77,7 @@ function removeTask(id: string) {
   <div class="max-w-6xl mx-auto flex flex-col min-h-[calc(100vh-120px)] justify-between">
     <!-- Header -->
     <header class="mb-8">
-      <h2 class="text-display-lg font-bold text-on-surface mb-2">Rapid Input</h2>
+      <h1 class="text-display-lg font-bold text-on-surface mb-2">Rapid Input</h1>
       <p class="text-body-lg text-on-surface-variant max-w-2xl">
         Offload your working memory. Type a task and press Enter. Don't overthink, just capture to clear cognitive bandwidth.
       </p>
@@ -121,7 +90,7 @@ function removeTask(id: string) {
     >
       <div class="flex items-center gap-3 text-outline mb-4">
         <Icon name="material-symbols:keyboard" class="text-[28px]" />
-        <span class="text-label-md uppercase tracking-wider text-outline-variant font-semibold">Awaiting Input</span>
+        <span class="text-label-md uppercase tracking-wider text-on-surface-variant font-semibold">Awaiting Input</span>
       </div>
 
       <textarea
@@ -129,10 +98,12 @@ function removeTask(id: string) {
         @keydown="handleKeyDown"
         autofocus
         placeholder="What's on your mind?... (e.g. Prepare presentation, fix server bug)"
-        class="w-full flex-1 bg-transparent border-none resize-none focus:ring-0 text-headline-lg font-semibold text-on-surface placeholder:text-surface-dim outline-none"
+        class="w-full flex-1 bg-transparent border-none resize-none text-headline-lg font-semibold text-on-surface placeholder:text-on-surface-variant/70 outline-none"
+        aria-label="Capture a task"
+        enterkeyhint="done"
       />
 
-      <div class="absolute bottom-6 right-6 flex items-center gap-2 text-label-sm text-outline-variant">
+      <div class="absolute bottom-6 right-6 hidden sm:flex items-center gap-2 text-label-sm text-on-surface-variant">
         <span>Press <kbd class="px-2 py-1 bg-surface-container-low rounded border border-surface-variant text-on-surface-variant font-mono text-xs">Enter</kbd> to add</span>
       </div>
     </div>
@@ -140,15 +111,15 @@ function removeTask(id: string) {
     <!-- Quick Capture Preview -->
     <div class="mb-8">
       <div class="flex justify-between items-center mb-4">
-        <h3 class="text-headline-md font-semibold text-on-surface">Raw Inbox Preview</h3>
+        <h2 class="text-headline-md font-semibold text-on-surface">Raw inbox preview</h2>
         <div class="flex items-center gap-2">
           <button
             v-if="taskStore.rawInbox.length > 0"
             @click="openSwipeModal()"
-            class="px-3 py-1 bg-primary text-on-primary font-bold rounded-lg text-xs flex items-center gap-1.5 hover:bg-primary-container shadow-xs transition-all"
-            title="Buka Swipe Priority Mode"
+            class="px-3 py-2 min-h-11 md:min-h-0 md:py-1 bg-primary text-on-primary font-bold rounded-lg text-xs flex items-center gap-1.5 hover:bg-primary-container shadow-xs transition-all"
+            title="Open Swipe Priority Mode"
           >
-            <Icon name="material-symbols:swipe" class="text-[16px]" />
+            <Icon name="material-symbols:swipe" class="text-[16px]" aria-hidden="true" />
             <span>Swipe Mode</span>
           </button>
           <span class="text-label-md text-outline bg-surface-container-low px-3 py-1 rounded-full font-medium">
@@ -157,7 +128,7 @@ function removeTask(id: string) {
         </div>
       </div>
 
-      <div v-if="taskStore.rawInbox.length === 0" class="p-6 text-center border border-dashed border-surface-variant rounded-lg text-outline">
+      <div v-if="taskStore.rawInbox.length === 0" class="p-6 text-center border border-dashed border-surface-variant rounded-lg text-on-surface-variant">
         No raw tasks yet. Type above and press Enter to capture thoughts instantaneously.
       </div>
 
@@ -165,26 +136,25 @@ function removeTask(id: string) {
         <div
           v-for="task in taskStore.rawInbox"
           :key="task.id"
-          @click="handleTaskClick(task)"
           @contextmenu.prevent="onTaskContextMenu($event, task)"
-          class="bg-surface-container-lowest border border-surface-variant rounded-lg p-4 flex items-center gap-3 hover:border-primary/50 hover:bg-surface-container-low hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 soft-shadow group/task relative cursor-pointer active:scale-[0.98]"
+          class="bg-surface-container-lowest border border-surface-variant rounded-lg p-3 sm:p-4 flex items-center gap-3 hover:border-primary/50 hover:bg-surface-container-low hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 soft-shadow group/task relative active:scale-[0.98]"
         >
-          <div class="w-2.5 h-2.5 rounded-full bg-outline-variant group-hover/task:bg-primary transition-colors shrink-0" />
-          <p class="text-body-md text-on-surface flex-1 min-w-0 leading-snug flex items-center justify-between gap-2">
+          <div class="w-2.5 h-2.5 rounded-full bg-outline-variant group-hover/task:bg-primary transition-colors shrink-0" aria-hidden="true" />
+          <button
+            type="button"
+            @click="handleTaskClick(task)"
+            class="text-left text-body-md text-on-surface flex-1 min-w-0 leading-snug flex items-center justify-between gap-2 cursor-pointer rounded-md"
+            :aria-label="`${task.title} — open details`"
+          >
             <span class="line-clamp-3 break-words min-w-0 flex-1 leading-snug">{{ task.title }}</span>
-            <span v-if="copiedTaskId === task.id" class="text-xs font-semibold text-primary bg-primary/10 px-1.5 py-0.5 rounded inline-flex items-center gap-1 shrink-0 animate-pulse">
-              <Icon name="material-symbols:check-circle" class="text-[14px]" /> Copied!
-            </span>
-          </p>
-          <div class="flex items-center gap-1 shrink-0">
-            <button
-              @click.stop="removeTask(task.id)"
-              class="text-outline hover:text-error opacity-0 group-hover/task:opacity-100 transition-opacity p-1 shrink-0"
-              title="Delete task"
-            >
-              <Icon name="material-symbols:close" class="text-[18px]" />
-            </button>
-          </div>
+          </button>
+          <button
+            @click.stop="removeTask(task.id)"
+            class="text-outline-variant hover:text-error sm:opacity-0 sm:group-hover/task:opacity-100 focus-visible:opacity-100 transition-opacity p-2 rounded-md shrink-0 min-h-11 min-w-11 flex items-center justify-center"
+            :aria-label="`Delete ${task.title}`"
+          >
+            <Icon name="material-symbols:close" class="text-[18px]" aria-hidden="true" />
+          </button>
         </div>
       </div>
     </div>

@@ -15,10 +15,12 @@ describe('stores/useTaskStore', () => {
     setActivePinia(createPinia())
   })
 
-  it('initializes with default seed tasks', () => {
+  it('starts empty instead of showing demo seed tasks', () => {
+    // Audit F-03: the store used to ship five hardcoded demo tasks, which the UI
+    // presented as real user data whenever the fetch was slow or unauthenticated.
     const store = useTaskStore()
-    expect(store.tasks.length).toBeGreaterThan(0)
-    expect(store.rawInbox.length).toBe(store.tasks.length)
+    expect(store.tasks).toEqual([])
+    expect(store.rawInbox).toEqual([])
   })
 
   it('correctly categorizes tasks into priority matrix getters', () => {
@@ -54,6 +56,7 @@ describe('stores/useTaskStore', () => {
 
   it('moves task to another quadrant', async () => {
     const store = useTaskStore()
+    await store.addTask('Seed task', 'inbox')
     const task = store.tasks[0]
 
     await store.moveTask(task.id, 'do-first')
@@ -63,6 +66,7 @@ describe('stores/useTaskStore', () => {
 
   it('toggles task completion status', async () => {
     const store = useTaskStore()
+    await store.addTask('Seed task', 'inbox')
     const task = store.tasks[0]
     expect(task.completed).toBe(false)
 
@@ -75,6 +79,7 @@ describe('stores/useTaskStore', () => {
 
   it('deletes task by id', async () => {
     const store = useTaskStore()
+    await store.addTask('Seed task', 'inbox')
     const targetId = store.tasks[0].id
     const initialCount = store.tasks.length
 
@@ -86,9 +91,24 @@ describe('stores/useTaskStore', () => {
 
   it('clears all tasks', async () => {
     const store = useTaskStore()
+    await store.addTask('One', 'inbox')
+    await store.addTask('Two', 'inbox')
     expect(store.tasks.length).toBeGreaterThan(0)
 
     await store.clearAllTasks()
     expect(store.tasks).toEqual([])
+  })
+
+  it('restores a deleted task', async () => {
+    const store = useTaskStore()
+    const created = await store.addTask('Recover me', 'inbox')
+    const task = created!
+
+    const result = await store.deleteTask(task.id, { undoable: true })
+    expect(result.success).toBe(true)
+    expect(store.tasks.some(t => t.id === task.id)).toBe(false)
+
+    await store.restoreTask(result.task!)
+    expect(store.tasks.some(t => t.title === 'Recover me')).toBe(true)
   })
 })

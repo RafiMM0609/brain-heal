@@ -13,6 +13,7 @@ const { pipWindow, isSupported, togglePiP } = useDocumentPiP()
 const { requestNotificationPermission } = useAudioNotification()
 const { isConnected: isRedisConnected, latency: redisLatency } = useUpstashStatus()
 const { settings: companionSettings } = useCatCompanion()
+const { isDark, toggle: toggleColorMode } = useColorMode()
 
 const isProfileMenuOpen = ref(false)
 const isMobileDrawerOpen = ref(false)
@@ -56,11 +57,10 @@ onUnmounted(() => {
       <!-- Burger Icon Trigger for Mobile View & PWA -->
       <button
         @click="isMobileDrawerOpen = true"
-        class="p-1.5 text-on-surface hover:text-primary hover:bg-surface-container-high rounded-xl transition-all active:scale-95 md:hidden flex items-center justify-center border border-surface-variant/60"
-        title="Open Option Menu"
-        aria-label="Open Option Menu"
+        class="p-2 min-h-11 min-w-11 text-on-surface hover:text-primary hover:bg-surface-container-high rounded-xl transition-all active:scale-95 md:hidden flex items-center justify-center border border-surface-variant/60"
+        aria-label="Open menu"
       >
-        <Icon name="material-symbols:menu" class="text-[22px]" />
+        <Icon name="material-symbols:menu" class="text-[22px]" aria-hidden="true" />
       </button>
       <span class="text-title-md font-bold text-primary block md:hidden truncate">NeuralFlow</span>
     </div>
@@ -76,67 +76,74 @@ onUnmounted(() => {
       <button
         v-if="isSupported"
         @click="togglePiP()"
-        class="p-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-full transition-colors duration-200 flex items-center justify-center"
+        class="p-2 min-h-11 min-w-11 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-full transition-colors duration-200 flex items-center justify-center"
         :class="{ 'bg-secondary/20 text-secondary': pipWindow }"
-        title="Open Always-on-Top Floating Focus Anchor (Picture-in-Picture)"
-        aria-label="Picture-in-Picture Focus Anchor"
+        :aria-pressed="!!pipWindow"
+        aria-label="Open floating focus window (Picture-in-Picture)"
       >
-        <Icon name="material-symbols:picture-in-picture-alt" class="text-[20px]" />
+        <Icon name="material-symbols:picture-in-picture-alt" class="text-[20px]" aria-hidden="true" />
       </button>
 
       <!-- Upstash Cloud Sync Status Badge -->
       <div
         class="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs border transition-all"
-        :class="isRedisConnected ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/10 border-amber-500/30 text-amber-600 dark:text-amber-400'"
+        :class="isRedisConnected ? 'bg-status-online-surface border-status-online/40 text-status-online' : 'bg-status-warn-surface border-status-warn/40 text-status-warn'"
         :title="isRedisConnected ? `Upstash Redis Connected (${redisLatency !== null ? redisLatency + 'ms latency' : 'active'})` : 'Upstash disconnected (local memory fallback)'"
       >
         <span
           class="w-2 h-2 rounded-full transition-colors"
-          :class="isRedisConnected ? 'bg-emerald-500 shadow-sm shadow-emerald-500/50' : 'bg-amber-500'"
+          :class="isRedisConnected ? 'bg-status-online' : 'bg-status-warn'"
         />
-        <span class="text-[11px] font-medium font-mono">
-          {{ isRedisConnected ? 'Upstash' : 'Offline' }}
+        <span class="text-[11px] font-semibold">
+          {{ isRedisConnected ? 'Synced' : 'Offline' }}
         </span>
       </div>
 
       <!-- Focus Cat Companion Quick Trigger -->
       <button
         @click="companionSettings.enabled = !companionSettings.enabled"
-        class="p-1.5 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-full transition-colors duration-200 flex items-center justify-center relative group"
+        class="p-2 min-h-11 min-w-11 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-full transition-colors duration-200 flex items-center justify-center relative group"
         :class="{ 'bg-primary/10 text-primary': companionSettings.enabled }"
-        :title="companionSettings.enabled ? `Focus Companion (${companionSettings.name}): Active (Click to toggle)` : 'Enable Focus Cat Companion'"
-        aria-label="Toggle Focus Companion"
+        :title="companionSettings.enabled ? `Focus companion (${companionSettings.name}) active` : 'Enable focus companion'"
+        :aria-pressed="companionSettings.enabled"
+        aria-label="Toggle focus companion"
       >
-        <Icon name="material-symbols:pets" class="text-[20px]" />
+        <Icon name="material-symbols:pets" class="text-[20px]" aria-hidden="true" />
         <span
           v-if="companionSettings.enabled"
-          class="absolute top-1 right-1 w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-surface"
+          class="absolute top-1 right-1 w-2 h-2 rounded-full bg-status-online ring-2 ring-surface"
+          aria-hidden="true"
         />
+      </button>
+
+      <!-- Colour scheme toggle (Audit C-01) -->
+      <button
+        @click="toggleColorMode"
+        class="p-2 min-h-11 min-w-11 text-on-surface-variant hover:bg-surface-container-low hover:text-primary rounded-full transition-colors duration-200 flex items-center justify-center"
+        :aria-label="isDark ? 'Switch to light theme' : 'Switch to dark theme'"
+        :aria-pressed="isDark"
+      >
+        <Icon :name="isDark ? 'material-symbols:light-mode' : 'material-symbols:dark-mode'" class="text-[20px]" aria-hidden="true" />
       </button>
 
       <button
         @click="requestNotificationPermission"
-        aria-label="Notifications"
-        title="Enable Push Notifications"
-        class="p-1.5 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center"
+        aria-label="Enable push notifications"
+        class="p-2 min-h-11 min-w-11 text-on-surface-variant hover:bg-surface-container-low rounded-full transition-colors duration-200 flex items-center justify-center"
       >
-        <Icon name="material-symbols:notifications" class="text-[20px]" />
+        <Icon name="material-symbols:notifications" class="text-[20px]" aria-hidden="true" />
       </button>
 
       <!-- User Profile Avatar & Badge / Name Dropdown Trigger -->
       <div ref="profileMenuRef" class="relative">
         <button
           @click.stop="toggleProfileMenu"
-          class="flex items-center gap-1.5 p-1 rounded-full hover:bg-surface-container-low transition-all border border-transparent hover:border-surface-variant focus:outline-none"
+          class="flex items-center gap-1.5 p-1 min-h-11 rounded-full hover:bg-surface-container-low transition-all border border-transparent hover:border-surface-variant"
           :class="{ 'bg-surface-container-low border-surface-variant': isProfileMenuOpen }"
           title="Profile Menu"
           :aria-expanded="isProfileMenuOpen"
         >
-          <img
-            :src="authStore.user?.avatarUrl"
-            :alt="authStore.user?.name || 'User Profile'"
-            class="w-7 h-7 rounded-full border border-outline-variant object-cover"
-          />
+          <UserAvatar :src="authStore.user?.avatarUrl" :name="authStore.user?.name" size="sm" />
           <span v-if="authStore.user?.isGuest" class="hidden lg:inline-block text-[11px] px-2.5 py-0.5 bg-primary-fixed text-on-primary-fixed rounded-full font-semibold uppercase tracking-wider">
             GUEST
           </span>
@@ -168,11 +175,7 @@ onUnmounted(() => {
           >
             <!-- User Info Header -->
             <div class="flex items-center gap-3 pb-3 border-b border-surface-variant">
-              <img
-                :src="authStore.user?.avatarUrl"
-                :alt="authStore.user?.name || 'User Profile'"
-                class="w-12 h-12 rounded-full border-2 border-primary/20 object-cover shrink-0"
-              />
+              <UserAvatar :src="authStore.user?.avatarUrl" :name="authStore.user?.name" size="lg" />
               <div class="flex flex-col min-w-0 flex-1">
                 <div class="flex items-center gap-1.5">
                   <h4 class="text-sm font-bold text-on-surface truncate">

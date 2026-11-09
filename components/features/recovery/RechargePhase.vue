@@ -106,7 +106,7 @@ function endBreakEarly() {
             <div class="w-10 h-10 rounded-full bg-secondary-container flex items-center justify-center text-on-secondary-container shrink-0">
               <Icon name="material-symbols:air" class="text-[20px]" />
             </div>
-            <h3 class="text-headline-md font-bold text-primary">Box Breathing</h3>
+            <h2 class="text-headline-md font-bold text-primary">Box Breathing</h2>
           </div>
           <p class="text-body-md text-on-surface-variant mb-6 flex-grow">
             Inhale 4s, hold 4s, exhale 4s, hold 4s. Proven method to immediately lower cortisol and reset the vagus nerve.
@@ -125,7 +125,7 @@ function endBreakEarly() {
             <div class="w-10 h-10 rounded-full bg-primary-fixed flex items-center justify-center text-on-primary-fixed shrink-0">
               <Icon name="material-symbols:water-drop" class="text-[20px]" />
             </div>
-            <h3 class="text-headline-md font-bold text-primary">Hydration</h3>
+            <h2 class="text-headline-md font-bold text-primary">Hydration</h2>
           </div>
           <p class="text-body-md text-on-surface-variant mb-6 flex-grow">
             Drink 8oz of fresh water. Brain tissue is 73% water; mild dehydration causes measurable cognitive slowing.
@@ -144,7 +144,7 @@ function endBreakEarly() {
             <div class="w-10 h-10 rounded-full bg-tertiary-fixed flex items-center justify-center text-on-tertiary-fixed shrink-0">
               <Icon name="material-symbols:accessibility-new" class="text-[20px]" />
             </div>
-            <h3 class="text-headline-md font-bold text-primary">Stretch & Move</h3>
+            <h2 class="text-headline-md font-bold text-primary">Stretch &amp; Move</h2>
           </div>
           <p class="text-body-md text-on-surface-variant mb-6 flex-grow">
             Stand up and perform light dynamic stretching to restore cerebrovascular blood flow and alleviate neck strain.

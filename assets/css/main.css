@@ -2,9 +2,128 @@
 @tailwind components;
 @tailwind utilities;
 
+/**
+ * Design tokens.
+ *
+ * Every M3 role is declared once here as an `R G B` triple, and the Tailwind
+ * colour palette reads them through `rgb(var(--color-x) / <alpha-value>)`.
+ * Consequences:
+ *  - `.dark` on <html> re-maps the entire palette (previously `darkMode: 'class'`
+ *    was configured but no `.dark` class or toggle ever existed).
+ *  - `outline` / `outline-variant` are darkened in the light theme so they still
+ *    reach 4.5:1 when used as small text (they were 4.26:1 / 1.62:1).
+ */
 @layer base {
-  html {
-    color-scheme: light dark;
+  :root {
+    --color-primary: 0 36 70;
+    --color-primary-container: 26 58 95;
+    --color-on-primary: 255 255 255;
+    --color-on-primary-container: 135 164 207;
+    --color-primary-fixed: 211 227 255;
+    --color-primary-fixed-dim: 171 200 245;
+    --color-on-primary-fixed: 0 28 57;
+    --color-on-primary-fixed-variant: 42 72 110;
+
+    --color-secondary: 56 92 56;
+    --color-secondary-container: 190 236 185;
+    --color-on-secondary: 255 255 255;
+    --color-on-secondary-container: 68 108 68;
+    --color-secondary-fixed: 193 238 188;
+    --color-secondary-fixed-dim: 165 210 162;
+
+    --color-tertiary: 67 21 3;
+    --color-tertiary-container: 94 42 20;
+    --color-tertiary-fixed: 255 219 206;
+    --color-tertiary-fixed-dim: 255 181 154;
+    --color-on-tertiary-fixed: 56 13 0;
+
+    --color-background: 248 249 250;
+    --color-on-background: 25 28 29;
+    --color-surface: 248 249 250;
+    --color-surface-bright: 248 249 250;
+    --color-surface-dim: 217 218 219;
+    --color-surface-variant: 225 227 228;
+    --color-surface-container-lowest: 255 255 255;
+    --color-surface-container-low: 243 244 245;
+    --color-surface-container: 237 238 239;
+    --color-surface-container-high: 231 232 233;
+    --color-surface-container-highest: 225 227 228;
+
+    --color-on-surface: 25 28 29;
+    --color-on-surface-variant: 67 71 78;
+    /* Darkened from #73777f (4.26:1) and #c3c6cf (1.62:1) to pass AA. */
+    --color-outline: 95 99 106;
+    --color-outline-variant: 108 112 119;
+
+    --color-error: 186 26 26;
+    --color-error-container: 255 218 214;
+    --color-on-error: 255 255 255;
+    --color-on-error-container: 147 0 10;
+
+    /* Status colours: amber-800 / emerald-700 on a tinted surface. */
+    --color-status-online: 4 120 87;
+    --color-status-online-surface: 236 253 245;
+    --color-status-warn: 146 64 14;
+    --color-status-warn-surface: 255 251 235;
+
+    --ring-focus: 0 82 155;
+
+    color-scheme: light;
+  }
+
+  .dark {
+    --color-primary: 171 200 245;
+    --color-primary-container: 42 72 110;
+    --color-on-primary: 0 36 70;
+    --color-on-primary-container: 211 227 255;
+    --color-primary-fixed: 42 72 110;
+    --color-primary-fixed-dim: 26 58 95;
+    --color-on-primary-fixed: 211 227 255;
+    --color-on-primary-fixed-variant: 171 200 245;
+
+    --color-secondary: 165 210 162;
+    --color-secondary-container: 45 74 45;
+    --color-on-secondary: 20 40 20;
+    --color-on-secondary-container: 193 238 188;
+    --color-secondary-fixed: 45 74 45;
+    --color-secondary-fixed-dim: 56 92 56;
+
+    --color-tertiary: 255 181 154;
+    --color-tertiary-container: 94 42 20;
+    --color-tertiary-fixed: 94 42 20;
+    --color-tertiary-fixed-dim: 67 21 3;
+    --color-on-tertiary-fixed: 255 219 206;
+
+    --color-background: 17 20 22;
+    --color-on-background: 227 230 235;
+    --color-surface: 22 25 28;
+    --color-surface-bright: 39 43 47;
+    --color-surface-dim: 17 20 22;
+    --color-surface-variant: 66 71 78;
+    --color-surface-container-lowest: 14 17 19;
+    --color-surface-container-low: 27 30 34;
+    --color-surface-container: 33 36 40;
+    --color-surface-container-high: 42 46 50;
+    --color-surface-container-highest: 52 56 61;
+
+    --color-on-surface: 227 230 235;
+    --color-on-surface-variant: 186 192 200;
+    --color-outline: 156 162 171;
+    --color-outline-variant: 130 136 145;
+
+    --color-error: 255 179 173;
+    --color-error-container: 147 0 10;
+    --color-on-error: 105 0 5;
+    --color-on-error-container: 255 218 214;
+
+    --color-status-online: 110 231 183;
+    --color-status-online-surface: 6 46 38;
+    --color-status-warn: 252 211 77;
+    --color-status-warn-surface: 61 39 7;
+
+    --ring-focus: 171 200 245;
+
+    color-scheme: dark;
   }
 
   body {
@@ -12,6 +131,14 @@
     background-color: theme('colors.background');
     color: theme('colors.on-background');
     -webkit-font-smoothing: antialiased;
+  }
+
+  /* Audit A-04: several components removed the focus ring without a
+     replacement. A single `:focus-visible` rule restores a consistent,
+     visible indicator everywhere, while mouse clicks stay clean. */
+  :focus-visible {
+    outline: 2px solid rgb(var(--ring-focus));
+    outline-offset: 2px;
   }
 }
 
@@ -21,8 +148,8 @@
 }
 
 .matrix-quadrant.drag-over {
-  border-color: #002446;
-  background-color: rgba(0, 36, 70, 0.05);
+  border-color: rgb(var(--color-primary));
+  background-color: rgb(var(--color-primary) / 0.06);
 }
 
 .task-card {
@@ -57,19 +184,19 @@
 .timer-circle {
   stroke-dasharray: 880;
   transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-  filter: drop-shadow(0 4px 12px rgba(64, 104, 64, 0.25));
+  filter: drop-shadow(0 4px 12px rgb(var(--color-secondary) / 0.25));
 }
 
 .timer-circle-work {
-  filter: drop-shadow(0 4px 14px rgba(0, 36, 70, 0.3));
+  filter: drop-shadow(0 4px 14px rgb(var(--color-primary) / 0.3));
 }
 
 .timer-glow {
-  box-shadow: 0 0 50px -10px rgba(0, 36, 70, 0.15);
+  box-shadow: 0 0 50px -10px rgb(var(--color-primary) / 0.15);
 }
 
 .dark .timer-glow {
-  box-shadow: 0 0 50px -10px rgba(135, 164, 207, 0.2);
+  box-shadow: 0 0 50px -10px rgb(var(--color-primary) / 0.2);
 }
 
 /* Recovery Ambient Breathing Animation */
@@ -92,25 +219,40 @@
 }
 
 .soft-gradient {
-  background: radial-gradient(circle at center, #beecb9 0%, #f8f9fa 70%);
+  background: radial-gradient(circle at center,
+      rgb(var(--color-secondary-container)) 0%,
+      rgb(var(--color-background)) 70%);
 }
 
 .glass-panel {
-  background: rgba(255, 255, 255, 0.75);
+  background: rgb(var(--color-surface-bright) / 0.75);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
+  border: 1px solid rgb(var(--color-surface-variant) / 0.4);
 }
 
 .glass-card {
-  background: rgba(255, 255, 255, 0.65);
+  background: rgb(var(--color-surface-bright) / 0.65);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(225, 227, 228, 0.6);
+  border: 1px solid rgb(var(--color-surface-variant) / 0.6);
 }
 
 .soft-shadow {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 0.04);
+}
+
+/* Screen-reader-only helper used by icon-only controls and skip links. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }
 
 /* Accessibility: Respect Reduced Motion Preferences */

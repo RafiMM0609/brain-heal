@@ -5,13 +5,14 @@ import type { TaskItem, QuadrantType } from '~/types/task'
 
 export const useTaskStore = defineStore('tasks', () => {
   const { apiFetch } = useApi()
-  const tasks = ref<TaskItem[]>([
-    { id: 'task-1', title: 'Finalize Q3 Strategy Deck', quadrant: 'inbox', createdAt: new Date().toISOString(), completed: false },
-    { id: 'task-2', title: 'Reply to vendor emails', quadrant: 'inbox', createdAt: new Date().toISOString(), completed: false },
-    { id: 'task-3', title: 'Schedule dentist appointment', quadrant: 'inbox', createdAt: new Date().toISOString(), completed: false },
-    { id: 'task-4', title: 'Read industry newsletter', quadrant: 'inbox', createdAt: new Date().toISOString(), completed: false },
-    { id: 'task-5', title: 'Fix urgent server bug', quadrant: 'inbox', createdAt: new Date().toISOString(), completed: false }
-  ])
+  /**
+   * Audit F-03: the store used to be seeded with five demo tasks that were
+   * never persisted anywhere. On a slow/failed fetch (or before signing in)
+   * the UI showed them as if they were the user's real data. The list now
+   * starts empty and the UI renders a proper empty state instead.
+   */
+  const tasks = ref<TaskItem[]>([])
+
   const isLoading = ref(false)
 
   // Getters
@@ -97,8 +98,16 @@ export const useTaskStore = defineStore('tasks', () => {
     }
   }
 
-  async function deleteTask(taskId: string) {
+  /**
+   * Removes a task optimistically.
+   *
+   * Audit F-02: deletion was permanent and irreversible, and the destructive
+   * control is only 26x32px on mobile. Passing `{ undoable: true }` keeps the
+   * removed task around long enough for the undo toast to restore it.
+   */
+  async function deleteTask(taskId: string, options: { undoable?: boolean } = {}) {
     const index = tasks.value.findIndex(t => t.id === taskId)
+    const removed = index !== -1 ? tasks.value[index] : undefined
     if (index !== -1) {
       tasks.value.splice(index, 1)
     }
@@ -109,13 +118,38 @@ export const useTaskStore = defineStore('tasks', () => {
       })
     } catch (err) {
       console.error(`[TaskStore] Failed to delete task ${taskId}:`, err)
+      // Put the task back so the UI does not lie about the server state.
+      if (removed && !tasks.value.some(t => t.id === removed.id)) {
+        tasks.value.splice(index, 0, removed)
+      }
+      return { success: false, task: removed }
+    }
+
+    return { success: true, task: removed, undoable: !!options.undoable }
+  }
+
+  /** Restores a previously deleted task (undo toast action). */
+  async function restoreTask(task: TaskItem) {
+    if (tasks.value.some(t => t.id === task.id)) return
+    tasks.value.push(task)
+    try {
+      const res = await apiFetch<{ tasks: TaskItem[] }>('/api/tasks', {
+        method: 'POST',
+        body: { title: task.title, quadrant: task.quadrant }
+      })
+      if (res && Array.isArray(res.tasks)) {
+        tasks.value = res.tasks
+      }
+    } catch (err) {
+      console.error('[TaskStore] Failed to restore task:', err)
     }
   }
 
   async function clearAllTasks() {
-    tasks.value = []
     try {
-      await apiFetch('/api/tasks', { method: 'DELETE' })
+      const res = await apiFetch<{ success: boolean; tasks: TaskItem[] }>('/api/tasks', { method: 'DELETE' })
+      // Trust the server list rather than assuming the delete worked.
+      tasks.value = Array.isArray(res?.tasks) ? res.tasks : []
     } catch (err) {
       console.error('[TaskStore] Failed to clear tasks:', err)
     }
@@ -151,6 +185,7 @@ export const useTaskStore = defineStore('tasks', () => {
     moveTask,
     toggleTaskComplete,
     deleteTask,
+    restoreTask,
     clearAllTasks,
     resetDefaultTasks
   }

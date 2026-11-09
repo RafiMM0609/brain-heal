@@ -2,6 +2,12 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 import AppModal from '~/components/ui/AppModal.vue'
 
+/**
+ * AppModal teleports its dialog to <body>, so assertions have to look at the
+ * document rather than the component wrapper. The previous version of this
+ * suite queried `wrapper.find(...)`, which asserted against an empty tree even
+ * though the dialog itself rendered fine.
+ */
 describe('components/ui/AppModal.vue', () => {
   beforeEach(() => {
     vi.stubGlobal('visualViewport', {
@@ -14,97 +20,124 @@ describe('components/ui/AppModal.vue', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    document.body.innerHTML = ''
+    document.body.style.overflow = ''
   })
 
-  const globalStubs = {
-    ClientOnly: {
-      template: '<div><slot /></div>'
-    },
-    Teleport: {
-      template: '<div><slot /></div>'
-    },
-    Transition: {
-      template: '<div><slot /></div>'
-    },
-    Icon: {
-      template: '<span class="icon-stub" />',
-      props: ['name']
-    }
+  type ModalProps = InstanceType<typeof AppModal>['$props']
+
+  function mountModal(props: ModalProps, slots?: Record<string, string>) {
+    return mount(AppModal, {
+      props,
+      slots,
+      attachTo: document.body
+    })
   }
 
+  const dialog = () => document.querySelector('[role="dialog"]')
+
   it('renders modal dialog with proper ARIA attributes when isOpen is true', () => {
-    const wrapper = mount(AppModal, {
-      props: {
-        isOpen: true,
-        title: 'Konfirmasi Task'
-      },
-      global: {
-        stubs: globalStubs
-      }
-    })
+    mountModal({ isOpen: true, title: 'Confirm task' })
 
-    const dialog = wrapper.find('[role="dialog"]')
-    expect(dialog.exists()).toBe(true)
-    expect(dialog.attributes('aria-modal')).toBe('true')
-    expect(dialog.attributes('aria-labelledby')).toBe('modal-title')
+    const el = dialog()
+    expect(el).not.toBeNull()
+    expect(el?.getAttribute('aria-modal')).toBe('true')
+    expect(el?.getAttribute('aria-labelledby')).toBe('modal-title')
 
-    const titleEl = wrapper.find('#modal-title')
-    expect(titleEl.exists()).toBe(true)
-    expect(titleEl.text()).toBe('Konfirmasi Task')
+    const titleEl = document.getElementById('modal-title')
+    expect(titleEl?.textContent?.trim()).toBe('Confirm task')
   })
 
+  it('does not render a dialog when isOpen is false', () => {
+    mountModal({ isOpen: false, title: 'Hidden' })
+    expect(dialog()).toBeNull()
+  })
+
+  // The dialog lives inside <Teleport>, so its listeners are not visible to
+  // `wrapper.emitted()`. Asserting through an `onClose` spy checks the same
+  // contract without depending on test-utils' internal event bookkeeping.
   it('emits close event when close button is clicked', async () => {
-    const wrapper = mount(AppModal, {
-      props: {
-        isOpen: true,
-        title: 'Detail Task'
-      },
-      global: {
-        stubs: globalStubs
-      }
-    })
+    const onClose = vi.fn()
+    mountModal({ isOpen: true, title: 'Detail task', onClose })
+    await nextFrame()
 
-    const closeBtn = wrapper.find('button[aria-label="Tutup Dialog"]')
-    expect(closeBtn.exists()).toBe(true)
+    const closeBtn = document.querySelector<HTMLButtonElement>('button[aria-label="Close dialog"]')
+    expect(closeBtn).not.toBeNull()
 
-    await closeBtn.trigger('click')
-    expect(wrapper.emitted('close')).toBeTruthy()
-    expect(wrapper.emitted('close')?.length).toBe(1)
+    closeBtn?.click()
+    await nextFrame()
+
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('emits close event when Escape key is pressed while modal is open', async () => {
-    const wrapper = mount(AppModal, {
-      props: {
-        isOpen: true,
-        title: 'Shortcut Test'
-      },
-      global: {
-        stubs: globalStubs
-      }
-    })
+    const onClose = vi.fn()
+    mountModal({ isOpen: true, title: 'Shortcut test', onClose })
+    await nextFrame()
 
-    // Simulate Escape key press on window
-    const escEvent = new KeyboardEvent('keydown', { key: 'Escape' })
-    window.dispatchEvent(escEvent)
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await nextFrame()
 
-    expect(wrapper.emitted('close')).toBeTruthy()
-    expect(wrapper.emitted('close')?.length).toBe(1)
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 
   it('does not emit close event on Escape if isOpen is false', async () => {
-    const wrapper = mount(AppModal, {
-      props: {
-        isOpen: false,
-        title: 'Closed Modal'
-      },
-      global: {
-        stubs: globalStubs
-      }
+    const onClose = vi.fn()
+    mountModal({ isOpen: false, title: 'Closed modal', onClose })
+    await nextFrame()
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    await nextFrame()
+
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  // --- Behaviour added by the UI/UX remediation -----------------------------
+
+  it('locks page scroll while open and restores it on close', async () => {
+    const wrapper = mountModal({ isOpen: true, title: 'Scroll lock' })
+    expect(document.body.style.overflow).toBe('hidden')
+
+    await wrapper.setProps({ isOpen: false })
+    expect(document.body.style.overflow).not.toBe('hidden')
+  })
+
+  it('moves focus into the dialog on open', async () => {
+    mountModal({ isOpen: true, title: 'Focus trap' }, {
+      default: '<button type="button">first</button><button type="button">last</button>'
     })
+    await nextFrame()
 
-    const escEvent = new KeyboardEvent('keydown', { key: 'Escape' })
-    window.dispatchEvent(escEvent)
+    const el = dialog()
+    expect(el).not.toBeNull()
+    expect(el?.contains(document.activeElement)).toBe(true)
+  })
 
-    expect(wrapper.emitted('close')).toBeFalsy()
+  it('does not close when the backdrop is clicked and closeOnBackdrop is false', async () => {
+    const onClose = vi.fn()
+    mountModal({ isOpen: true, title: 'Forced', closeOnBackdrop: false, onClose })
+    await nextFrame()
+
+    const backdrop = dialog()?.parentElement
+    backdrop?.dispatchEvent(new MouseEvent('click'))
+    await nextFrame()
+
+    expect(onClose).not.toHaveBeenCalled()
+  })
+
+  it('closes when the backdrop is clicked by default', async () => {
+    const onClose = vi.fn()
+    mountModal({ isOpen: true, title: 'Backdrop', onClose })
+    await nextFrame()
+
+    const backdrop = dialog()?.parentElement
+    backdrop?.dispatchEvent(new MouseEvent('click'))
+    await nextFrame()
+
+    expect(onClose).toHaveBeenCalledTimes(1)
   })
 })
+
+function nextFrame() {
+  return new Promise((resolve) => setTimeout(resolve, 40))
+}
