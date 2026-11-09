@@ -10,6 +10,16 @@ const token = (name) => `rgb(var(--color-${name}) / <alpha-value>)`
 
 module.exports = {
   darkMode: 'class',
+  /**
+   * Mobile-native: touch has no hover, so a browser fakes one — the first tap
+   * applies `:hover` and leaves it stuck there. With this flag every `hover:`
+   * utility compiles to `@media (hover: hover) and (pointer: fine)`, so the
+   * ~200 hover styles in this codebase stop firing on phones without touching
+   * a single component. Press feedback stays in `active:`.
+   */
+  future: {
+    hoverOnlyWhenSupported: true
+  },
   content: [
     './components/**/*.{js,vue,ts}',
     './layouts/**/*.vue',

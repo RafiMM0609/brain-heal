@@ -37,7 +37,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div class="bg-background text-on-background min-h-screen flex flex-col md:flex-row">
+  <div class="bg-background text-on-background min-h-[100dvh] flex flex-col md:flex-row">
     <!-- Audit A-02: the first tab stop is now a skip link instead of the
          navigation rail, so keyboard users can jump straight to the content. -->
     <a
@@ -49,7 +49,7 @@ onUnmounted(() => {
 
     <AppSidebar />
     <div
-      class="flex-1 flex flex-col min-h-screen overflow-hidden relative transition-all duration-300 ease-in-out"
+      class="flex-1 flex flex-col min-h-[100dvh] overflow-hidden relative transition-all duration-300 ease-in-out"
       :class="isCollapsed ? 'md:ml-20' : 'md:ml-64'"
     >
       <!-- Sticky Top Header Container -->

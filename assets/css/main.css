@@ -126,11 +126,51 @@
     color-scheme: dark;
   }
 
+  /**
+   * Mobile-native baseline. Every declaration here is one of the "tells" that
+   * makes a web app read as a website on a phone; none of them reproduce in a
+   * desktop browser's device emulation.
+   */
+  html {
+    /* iOS/Android paint a translucent flash over any tapped element that has a
+       click handler — the loudest "this is a website" signal there is. */
+    -webkit-tap-highlight-color: transparent;
+    /* No font inflation when the phone rotates to landscape. */
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* Pull-to-refresh and whole-page rubber-banding hijack scroll in an app
+       shell that owns its own scroll container (see main[overflow-y-auto]). */
+    overscroll-behavior: none;
+  }
+
   body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: theme('colors.background');
     color: theme('colors.on-background');
     -webkit-font-smoothing: antialiased;
+  }
+
+  /**
+   * The 300ms click delay. `manipulation` tells the browser the element never
+   * double-tap-zooms, so `click` fires the moment the finger lands.
+   * `user-select: none` stops iOS long-press from selecting a button's label —
+   * scoped to controls only, never to body, so content stays copyable.
+   */
+  button,
+  a,
+  [role='button'],
+  label,
+  summary {
+    touch-action: manipulation;
+  }
+
+  button,
+  [role='button'],
+  .drag-handle {
+    user-select: none;
+    -webkit-user-select: none;
+    /* No copy/share callout when a link or image is used as a control. */
+    -webkit-touch-callout: none;
   }
 
   /* Audit A-04: several components removed the focus ring without a
@@ -139,6 +179,26 @@
   :focus-visible {
     outline: 2px solid rgb(var(--ring-focus));
     outline-offset: 2px;
+  }
+}
+
+/**
+ * iOS Safari zooms the page when focus lands on an input whose font size is
+ * under 16px, and it does not zoom back out on blur — the user is left looking
+ * at a cropped, drifted layout. This is the real reason projects reach for
+ * `maximum-scale=1`, which is an accessibility failure (it also kills pinch
+ * zoom). Fix the cause instead, and only on touch input devices so the desktop
+ * design keeps its smaller type.
+ *
+ * Deliberately OUTSIDE `@layer base`: components set `text-xs` / `text-sm` on
+ * these inputs, and Tailwind utilities outrank the base layer, so an in-layer
+ * declaration would be silently overridden and the zoom would still happen.
+ */
+@media (pointer: coarse) {
+  input,
+  textarea,
+  select {
+    font-size: 16px;
   }
 }
 
@@ -178,6 +238,43 @@
 
 .mb-safe {
   margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/**
+ * Gesture surfaces.
+ *
+ * `touch-action` names what the *browser* may still do on that element; the
+ * gesture code owns the rest. Getting this wrong is what makes a vertical drag
+ * fight native page scroll, or a horizontal carousel jitter the page.
+ */
+.touch-pan-y {
+  touch-action: pan-y;
+}
+
+.touch-pan-x {
+  touch-action: pan-x;
+}
+
+/* A custom gesture owns every axis — drag-to-dismiss cards and sheets. */
+.touch-lock {
+  touch-action: none;
+}
+
+/**
+ * During the TRACK phase position must map 1:1 to the finger: no easing, no
+ * duration. Applied imperatively by the gesture code while the pointer is down
+ * and removed on release, when a transition takes over.
+ */
+.gesture-tracking {
+  transition: none !important;
+}
+
+/* The moment a finger touches a draggable surface it is being dragged, so the
+   highlight/callout would only fire mid-gesture. */
+.gesture-surface {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
 }
 
 /* Pomodoro Circular Progress Timer */

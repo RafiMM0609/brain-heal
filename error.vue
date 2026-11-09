@@ -30,7 +30,7 @@ function goBack() {
 </script>
 
 <template>
-  <div class="min-h-screen bg-background text-on-background flex items-center justify-center p-4">
+  <div class="min-h-[100dvh] bg-background text-on-background flex items-center justify-center p-4">
     <div class="w-full max-w-md bg-surface rounded-2xl border border-surface-variant shadow-lg p-6 sm:p-8 text-center">
       <div class="w-14 h-14 rounded-full bg-primary-container text-on-primary-container flex items-center justify-center mx-auto mb-4">
         <Icon

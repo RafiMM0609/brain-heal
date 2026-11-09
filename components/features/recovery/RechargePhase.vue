@@ -69,7 +69,7 @@ function endBreakEarly() {
 </script>
 
 <template>
-  <div class="relative min-h-[calc(100vh-120px)] flex flex-col items-center justify-center text-center p-4 overflow-hidden">
+  <div class="relative min-h-[calc(100dvh-120px)] flex flex-col items-center justify-center text-center p-4 overflow-hidden">
     <!-- Ambient Breathing Radial Background -->
     <div class="absolute inset-0 soft-gradient opacity-30 z-0 pointer-events-none" />
     <div class="absolute inset-0 z-0 flex items-center justify-center pointer-events-none">

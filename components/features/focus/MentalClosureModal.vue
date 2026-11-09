@@ -92,6 +92,7 @@ function selectNextTask(id: string, title: string) {
             id="closure-offload-note"
             v-model="offloadNote"
             type="text"
+            enterkeyhint="done"
             placeholder="Any leftover thoughts or next steps? (optional)"
             aria-describedby="closure-offload-hint"
             class="w-full min-h-12 px-3.5 py-2.5 bg-surface border border-surface-variant rounded-xl text-xs sm:text-sm text-on-surface placeholder:text-on-surface-variant/70 focus:border-primary transition-colors"

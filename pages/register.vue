@@ -72,6 +72,8 @@ async function handleGuestAccess() {
           v-model="name"
           type="text"
           autocomplete="name"
+          autocapitalize="words"
+          enterkeyhint="next"
           required
           placeholder="Alex Rivera"
           :disabled="isLoading"
@@ -87,6 +89,9 @@ async function handleGuestAccess() {
           type="email"
           autocomplete="email"
           inputmode="email"
+          autocapitalize="none"
+          autocorrect="off"
+          enterkeyhint="next"
           required
           placeholder="you@example.com"
           :disabled="isLoading"
@@ -102,6 +107,7 @@ async function handleGuestAccess() {
             v-model="password"
             :type="showPassword ? 'text' : 'password'"
             autocomplete="new-password"
+            enterkeyhint="go"
             required
             minlength="8"
             placeholder="••••••••"

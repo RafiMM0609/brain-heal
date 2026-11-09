@@ -62,9 +62,15 @@ export default defineNuxtConfig({
         { name: 'apple-mobile-web-app-capable', content: 'yes' },
         { name: 'apple-mobile-web-app-status-bar-style', content: 'black-translucent' },
         { name: 'apple-mobile-web-app-title', content: 'NeuralFlow' },
-        // Matches the light surface token; prevents a white flash before the
-        // color-mode plugin runs.
-        { name: 'theme-color', content: '#f8f9fa' }
+        // Mobile-native: the status bar and browser chrome take their colour
+        // from `theme-color`. One value means light mode gets a dark bar (or the
+        // dark theme gets a white one), so each scheme gets its own — matched to
+        // the surface colour at the top of the page, not the brand colour.
+        // `useColorMode` rewrites these tags when the user overrides the OS
+        // preference with the in-app toggle.
+        { name: 'theme-color', media: '(prefers-color-scheme: light)', content: '#f8f9fa' },
+        { name: 'theme-color', media: '(prefers-color-scheme: dark)', content: '#16191c' },
+        { name: 'color-scheme', content: 'light dark' }
       ],
       link: [
         { rel: 'manifest', href: '/manifest.json' },

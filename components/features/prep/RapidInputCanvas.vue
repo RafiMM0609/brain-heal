@@ -74,7 +74,7 @@ function removeTask(id: string) {
 </script>
 
 <template>
-  <div class="max-w-6xl mx-auto flex flex-col min-h-[calc(100vh-120px)] justify-between">
+  <div class="max-w-6xl mx-auto flex flex-col min-h-[calc(100dvh-120px)] justify-between">
     <!-- Header -->
     <header class="mb-8">
       <h1 class="text-display-lg font-bold text-on-surface mb-2">Rapid Input</h1>

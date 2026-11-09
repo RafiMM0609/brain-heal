@@ -76,6 +76,9 @@ function resolveRedirect() {
           type="email"
           autocomplete="email"
           inputmode="email"
+          autocapitalize="none"
+          autocorrect="off"
+          enterkeyhint="next"
           required
           placeholder="you@example.com"
           :disabled="isLoading"
@@ -92,6 +95,7 @@ function resolveRedirect() {
             v-model="password"
             :type="showPassword ? 'text' : 'password'"
             autocomplete="current-password"
+            enterkeyhint="go"
             required
             placeholder="••••••••"
             :disabled="isLoading"

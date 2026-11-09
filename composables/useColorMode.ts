@@ -12,6 +12,32 @@ export type ColorMode = 'light' | 'dark' | 'system'
 
 const STORAGE_KEY = 'neuralflow-color-mode'
 
+/**
+ * The `theme-color` meta tags declared in nuxt.config.ts key off
+ * `prefers-color-scheme`, so they follow the *OS* setting. The in-app toggle
+ * flips a class instead, which means the phone's status bar would keep the OS
+ * colour after a manual override — a light bar above a dark app. Rewriting the
+ * tags keeps the bar in sync with what the user actually sees. The values
+ * mirror the `--color-surface` token of each scheme.
+ */
+const THEME_COLOR = {
+  light: '#f8f9fa',
+  dark: '#16191c'
+} as const
+
+function syncThemeColor(dark: boolean) {
+  if (typeof document === 'undefined') return
+
+  document
+    .querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]')
+    .forEach((tag) => tag.remove())
+
+  const meta = document.createElement('meta')
+  meta.name = 'theme-color'
+  meta.content = dark ? THEME_COLOR.dark : THEME_COLOR.light
+  document.head.appendChild(meta)
+}
+
 export function useColorMode() {
   const mode = useState<ColorMode>('color-mode', () => 'system')
   const isDark = useState<boolean>('color-mode-is-dark', () => false)
@@ -29,6 +55,7 @@ export function useColorMode() {
     isDark.value = dark
     document.documentElement.classList.toggle('dark', dark)
     document.documentElement.style.colorScheme = dark ? 'dark' : 'light'
+    syncThemeColor(dark)
 
     try {
       if (next === 'system') localStorage.removeItem(STORAGE_KEY)

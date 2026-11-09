@@ -299,6 +299,7 @@ const quadrants = computed<QuadrantConfig[]>(() => [
               v-model="quickAddInput"
               @keydown.enter="handleQuickAdd"
               type="text"
+              enterkeyhint="done"
               placeholder="Quick add task..."
               aria-label="Quick add task"
               class="w-full pl-3 pr-10 py-2 bg-surface-container-low border-none rounded-lg text-body-md text-on-surface focus:ring-2 focus:ring-primary focus:bg-surface-bright transition-all"
